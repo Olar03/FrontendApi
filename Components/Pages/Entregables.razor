@@ -28,7 +28,7 @@
         <div class="mb-3 d-flex gap-2">
             @* Botones para acciones generales *@
             <button type="button" class="btn btn-outline-secondary" @onclick="ProbarConexion">
-                <i class="bi bi-wifi aria-hidden="true"></i> Probar conexión
+                <i class="bi bi-wifi aria-hidden=" true"></i> Probar conexión
             </button>
             <button type="button" class="btn btn-outline-primary" @onclick="CargarEntregables">
                 <i class="bi bi-eye" aria-hidden="true"></i> Ver Usuarios
@@ -81,25 +81,29 @@
                 @* Campo Fecha Inicio *@
                 <div class="col-md-3">
                     <label class="form-label">Fecha Inicio</label>
-                    <InputDate class="form-control" @bind-Value="entregableActual.FechaInicio" />
+                    <InputDate class="form-control" @bind-Value="entregableActual.FechaInicio"
+                        min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 </div>
 
                 @* Campo Fecha Fin Prevista *@
                 <div class="col-md-3">
                     <label class="form-label">Fecha Fin Prevista</label>
-                    <InputDate class="form-control" @bind-Value="entregableActual.FechaFinPrevista" />
+                    <InputDate class="form-control" @bind-Value="entregableActual.FechaFinPrevista"
+                        min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 </div>
 
                 @* Campo Fecha Modificación *@
                 <div class="col-md-3">
                     <label class="form-label">Fecha Modificación</label>
-                    <InputDate class="form-control" @bind-Value="entregableActual.FechaModificacion" />
+                    <InputDate class="form-control" @bind-Value="entregableActual.FechaModificacion"
+                        min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 </div>
 
                 @* Campo Fecha Finalización *@
                 <div class="col-md-3">
                     <label class="form-label">Fecha Finalización</label>
-                    <InputDate class="form-control" @bind-Value="entregableActual.FechaFinalizacion" />
+                    <InputDate class="form-control" @bind-Value="entregableActual.FechaFinalizacion"
+                        min="@DateTime.Today.ToString("yyyy-MM-dd")" />
                 </div>
             </div>
 
@@ -113,7 +117,7 @@
                 </button>
                 <button type="button" class="btn btn-warning" @onclick="ActualizarEntregable"
                     disabled="@(!existeEntregable)">
-                    <i class="bi bi-pencil-square" aria-hidden="true" ></i> Actualizar
+                    <i class="bi bi-pencil-square" aria-hidden="true"></i> Actualizar
                 </button>
                 <button type="button" class="btn btn-danger" @onclick="EliminarEntregable"
                     disabled="@(!existeEntregable)">

@@ -37,3 +37,4 @@ C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\FrontendBlazorApi.csp
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\Frontend.1D59CE2F.Up2Date
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\p9qfri4flf-3f36p8i1qj.gz
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\oj55z46223-3f36p8i1qj.gz
+C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\FrontendBlazorApi.sourcelink.json
