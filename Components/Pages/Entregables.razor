@@ -1,0 +1,529 @@
+@*
+    -Pagina de Entregables
+    -Autor: Victor Oliveros
+    -Fecha: 10/2025
+    -Version: 1.0
+    -Descripcion: Pagina que muestra una lista de entregables y permite modificaciones de acuerdo a un CRUD obtenidas de una API REST.
+*@
+@page "/entregables"
+
+@using System.Net.Http.Json
+@using FrontendBlazorApi.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using System.Linq
+@inject IHttpClientFactory fabricaHttp
+@rendermode InteractiveServer
+
+<PageTitle>Entregables</PageTitle>
+
+<div class="container">
+    <div class="welcome-card">
+        <h2 class="display-4 text-primary mb-4">
+            <i class="bi bi-file-fill me-3"></i>
+            Gestión de entregables
+        </h2>
+
+        @* Barra de acciones principales *@
+        <div class="mb-3 d-flex gap-2">
+            @* Botones para acciones generales *@
+            <button type="button" class="btn btn-outline-secondary" @onclick="ProbarConexion">
+                <i class="bi bi-wifi aria-hidden="true"></i> Probar conexión
+            </button>
+            <button type="button" class="btn btn-outline-primary" @onclick="CargarEntregables">
+                <i class="bi bi-eye" aria-hidden="true"></i> Ver Usuarios
+            </button>
+            <button type="button" class="btn btn-outline-dark" @onclick="LimpiarFormulario">
+                <i class="bi bi-eraser" aria-hidden="true"></i> Limpiar
+            </button>
+        </div>
+
+        @* Área de mensajes para retroalimentación al usuario *@
+        @if (!string.IsNullOrWhiteSpace(mensaje))
+        {
+            <div class="@claseAviso" role="alert">@mensaje</div>
+        }
+
+        @* Formulario para crear/editar entregables *@
+        <h4>Formulario de Entregable</h4>
+
+        <EditForm Model="entregableActual" OnValidSubmit="GuardarSegunEstado" FormName="EntregableForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            @* Campos del formulario *@
+            <div class="row g-3">
+                @* Campo Id - Solo para búsqueda *@
+                <div class="col-md-2">
+                    <label class="form-label">ID</label>
+                    <InputNumber class="form-control" @bind-Value="entregableActual.Id" />
+                    <div class="form-text">Solo para búsqueda</div>
+                </div>
+
+                @* Campo Código *@
+                <div class="col-md-3">
+                    <label class="form-label">Código</label>
+                    <InputText class="form-control" @bind-Value="entregableActual.Codigo" />
+                </div>
+
+                @* Campo Título *@
+                <div class="col-md-4">
+                    <label class="form-label">Título</label>
+                    <InputText class="form-control" @bind-Value="entregableActual.Titulo" />
+                </div>
+
+                @* Campo Descripción *@
+                <div class="col-md-3">
+                    <label class="form-label">Descripción</label>
+                    <InputText class="form-control" @bind-Value="entregableActual.Descripcion" />
+                </div>
+
+                @* Campo Fecha Inicio *@
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Inicio</label>
+                    <InputDate class="form-control" @bind-Value="entregableActual.FechaInicio" />
+                </div>
+
+                @* Campo Fecha Fin Prevista *@
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Fin Prevista</label>
+                    <InputDate class="form-control" @bind-Value="entregableActual.FechaFinPrevista" />
+                </div>
+
+                @* Campo Fecha Modificación *@
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Modificación</label>
+                    <InputDate class="form-control" @bind-Value="entregableActual.FechaModificacion" />
+                </div>
+
+                @* Campo Fecha Finalización *@
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Finalización</label>
+                    <InputDate class="form-control" @bind-Value="entregableActual.FechaFinalizacion" />
+                </div>
+            </div>
+
+            @* Botones de acción del formulario *@
+            <div class="mt-3 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-circle" aria-hidden="true"></i> @textoBotonGuardar
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="BuscarPorId">
+                    <i class="bi bi-search" aria-hidden="true"></i> Buscar
+                </button>
+                <button type="button" class="btn btn-warning" @onclick="ActualizarEntregable"
+                    disabled="@(!existeEntregable)">
+                    <i class="bi bi-pencil-square" aria-hidden="true" ></i> Actualizar
+                </button>
+                <button type="button" class="btn btn-danger" @onclick="EliminarEntregable"
+                    disabled="@(!existeEntregable)">
+                    <i class="bi bi-trash" aria-hidden="true"></i> Eliminar
+                </button>
+            </div>
+        </EditForm>
+
+        <hr />
+
+        @* Tabla de entregables *@
+        @if (cargando)
+        {
+            <p><em>Cargando entregables...</em></p>
+        }
+        else if (listaEntregables.Count == 0)
+        {
+            <p>No hay entregables registrados.</p>
+        }
+        else
+        {
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Código</th>
+                        <th>Título</th>
+                        <th>Descripción</th>
+                        <th>Fecha Inicio</th>
+                        <th>Fecha Fin Prevista</th>
+                        <th>Fecha Modificación</th>
+                        <th>Fecha Finalización</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entregable in listaEntregables)
+                    {
+                        <tr>
+                            <td>@entregable.Id</td>
+                            <td>@entregable.Codigo</td>
+                            <td>@entregable.Titulo</td>
+                            <td>@entregable.Descripcion</td>
+                            <td>@(entregable.FechaInicio?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                            <td>@(entregable.FechaFinPrevista?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                            <td>@(entregable.FechaModificacion?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                            <td>@(entregable.FechaFinalizacion?.ToString("dd/MM/yyyy") ?? "N/A")</td>
+                            <td>
+                                <button class="btn btn-sm btn-info" @onclick="() => CargarEnFormulario(entregable)">
+                                    <span class="oi oi-data-transfer-upload" aria-hidden="true"></span> Cargar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+    </div>
+</div>
+
+@code {
+    // ==========================================
+    // VARIABLES DE ESTADO
+    // ==========================================
+
+    // Lista para almacenar todos los entregables
+    private List<Entregable> listaEntregables = new();
+
+    // Objeto para manejar el entregable actual en el formulario
+    [SupplyParameterFromForm]
+    private Entregable entregableActual { get; set; } = new();
+
+    // Variables de control de estado
+    private bool existeEntregable = false;
+    private string textoBotonGuardar = "Crear";
+    private string mensaje = "";
+    private string claseAviso = "alert alert-info";
+    private bool cargando = false;
+
+    // URL base para la API
+    private const string urlBaseApi = "api/entregable";
+
+    // ==========================================
+    // CICLO DE VIDA DEL COMPONENTE
+    // ==========================================
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarEntregables();
+    }
+
+    // ==========================================
+    // MÉTODOS CRUD
+    // ==========================================
+
+    /// <summary>
+    /// Obtiene la lista completa de entregables desde la API
+    /// HTTP GET /api/entregable
+    /// </summary>
+    private async Task CargarEntregables()
+    {
+        try
+        {
+            cargando = true;
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var respuesta = await http.GetFromJsonAsync<RespuestaApi<List<Entregable>>>(urlBaseApi);
+
+            listaEntregables = respuesta?.Datos ?? new List<Entregable>();
+
+            mensaje = $"Se cargaron {listaEntregables.Count} entregables.";
+            claseAviso = "alert alert-success";
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al cargar entregables: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    /// <summary>
+    /// Busca un entregable específico por su ID
+    /// HTTP GET /api/entregable/id/{id}
+    /// </summary>
+    private async Task BuscarPorId()
+    {
+        LimpiarMensajes();
+
+        if (entregableActual.Id == null || entregableActual.Id <= 0)
+        {
+            mensaje = "Por favor, ingrese un ID válido para buscar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var url = $"{urlBaseApi}/id/{entregableActual.Id}";
+            var respuesta = await http.GetFromJsonAsync<RespuestaApi<List<Entregable>>>(url);
+            var encontrado = respuesta?.Datos?.FirstOrDefault();
+
+            if (encontrado != null)
+            {
+                entregableActual = new Entregable
+                {
+                    Id = encontrado.Id,
+                    Codigo = encontrado.Codigo,
+                    Titulo = encontrado.Titulo,
+                    Descripcion = encontrado.Descripcion,
+                    FechaInicio = encontrado.FechaInicio,
+                    FechaFinPrevista = encontrado.FechaFinPrevista,
+                    FechaModificacion = encontrado.FechaModificacion,
+                    FechaFinalizacion = encontrado.FechaFinalizacion
+                };
+                existeEntregable = true;
+                textoBotonGuardar = "Actualizar";
+                mensaje = "Entregable encontrado.";
+                claseAviso = "alert alert-success";
+            }
+            else
+            {
+                mensaje = "Entregable no encontrado.";
+                claseAviso = "alert alert-warning";
+                existeEntregable = false;
+                textoBotonGuardar = "Crear";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al buscar: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Decide si crear o actualizar según el estado
+    /// </summary>
+    private async Task GuardarSegunEstado()
+    {
+        if (existeEntregable)
+            await ActualizarEntregable();
+        else
+            await CrearEntregable();
+    }
+
+    /// <summary>
+    /// Crea un nuevo entregable en la base de datos
+    /// IMPORTANTE: No envía el ID porque es autoincrement en la BD
+    /// HTTP POST /api/entregable
+    /// </summary>
+    private async Task CrearEntregable()
+    {
+        LimpiarMensajes();
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+
+            var entregableParaCrear = new
+            {
+                Codigo = entregableActual.Codigo,
+                Titulo = entregableActual.Titulo,
+                Descripcion = entregableActual.Descripcion,
+                FechaInicio = entregableActual.FechaInicio,
+                FechaFinPrevista = entregableActual.FechaFinPrevista,
+                FechaModificacion = entregableActual.FechaModificacion,
+                FechaFinalizacion = entregableActual.FechaFinalizacion
+            };
+
+            var respuesta = await http.PostAsJsonAsync(urlBaseApi, entregableParaCrear);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                var entregableCreado = await respuesta.Content.ReadFromJsonAsync<Entregable>();
+                if (entregableCreado != null)
+                {
+                    mensaje = $"Entregable creado con éxito. ID asignado: {entregableCreado.Id}";
+                    claseAviso = "alert alert-success";
+                    await CargarEntregables();
+                    LimpiarFormulario();
+                }
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"No se pudo crear el entregable: {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al crear: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Actualiza un entregable existente en la base de datos
+    /// IMPORTANTE: No modifica el ID ya que es autoincrement y asignado por la BD
+    /// HTTP PUT /api/entregable/id/{id}
+    /// </summary>
+    private async Task ActualizarEntregable()
+    {
+        LimpiarMensajes();
+
+        if (entregableActual.Id == null || entregableActual.Id <= 0)
+        {
+            mensaje = "Debe buscar un entregable válido antes de actualizar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var url = $"{urlBaseApi}/id/{entregableActual.Id}";
+
+            var entregableParaActualizar = new
+            {
+                Codigo = entregableActual.Codigo,
+                Titulo = entregableActual.Titulo,
+                Descripcion = entregableActual.Descripcion,
+                FechaInicio = entregableActual.FechaInicio,
+                FechaFinPrevista = entregableActual.FechaFinPrevista,
+                FechaModificacion = entregableActual.FechaModificacion,
+                FechaFinalizacion = entregableActual.FechaFinalizacion
+            };
+
+            var respuesta = await http.PutAsJsonAsync(url, entregableParaActualizar);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = $"Entregable con ID {entregableActual.Id} actualizado con éxito.";
+                claseAviso = "alert alert-success";
+                await CargarEntregables();
+                LimpiarFormulario();
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"Error al actualizar entregable: {respuesta.StatusCode} - {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al actualizar: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Elimina un entregable existente
+    /// HTTP DELETE /api/entregable/id/{id}
+    /// </summary>
+    private async Task EliminarEntregable()
+    {
+        LimpiarMensajes();
+
+        if (entregableActual.Id == null || entregableActual.Id <= 0)
+        {
+            mensaje = "Debe buscar un entregable primero para poder eliminar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var url = $"{urlBaseApi}/id/{entregableActual.Id}";
+            var respuesta = await http.DeleteAsync(url);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Entregable eliminado con éxito.";
+                claseAviso = "alert alert-success";
+                await CargarEntregables();
+                LimpiarFormulario();
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"No se pudo eliminar el entregable: {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al eliminar: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    // ==========================================
+    // MÉTODOS AUXILIARES
+    // ==========================================
+
+    /// <summary>
+    /// Prueba la conexión con la API
+    /// </summary>
+    private async Task ProbarConexion()
+    {
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var respuesta = await http.GetAsync(urlBaseApi);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Conexión exitosa con la API.";
+                claseAviso = "alert alert-success";
+            }
+            else
+            {
+                mensaje = $"Error de conexión: {respuesta.StatusCode}";
+                claseAviso = "alert alert-warning";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error de conexión: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Carga los datos de un entregable en el formulario
+    /// </summary>
+    private void CargarEnFormulario(Entregable e)
+    {
+        entregableActual = new Entregable
+        {
+            Id = e.Id,
+            Codigo = e.Codigo,
+            Titulo = e.Titulo,
+            Descripcion = e.Descripcion,
+            FechaInicio = e.FechaInicio,
+            FechaFinPrevista = e.FechaFinPrevista,
+            FechaModificacion = e.FechaModificacion,
+            FechaFinalizacion = e.FechaFinalizacion
+        };
+
+        existeEntregable = true;
+        textoBotonGuardar = "Actualizar";
+        mensaje = "Entregable cargado en el formulario.";
+        claseAviso = "alert alert-info";
+    }
+
+    /// <summary>
+    /// Limpia los mensajes de estado
+    /// </summary>
+    private void LimpiarMensajes()
+    {
+        mensaje = "";
+        claseAviso = "";
+    }
+
+    /// <summary>
+    /// Reinicia el formulario a su estado inicial
+    /// </summary>
+    private void LimpiarFormulario()
+    {
+        entregableActual = new Entregable();
+        existeEntregable = false;
+        textoBotonGuardar = "Crear";
+        LimpiarMensajes();
+    }
+}

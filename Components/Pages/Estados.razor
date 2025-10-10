@@ -1,0 +1,458 @@
+@*
+    -Pagina de Estados
+    -Autor: Victor Oliveros
+    -Fecha: 10/2025
+    -Version: 1.0
+    -Descripcion: Pagina que muestra una lista de estados y permite modificaciones de acuerdo a un CRUD obtenidas de una API REST.
+*@
+@page "/estados"
+
+@using System.Net.Http.Json
+@using FrontendBlazorApi.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Linq
+@inject IHttpClientFactory fabricaHttp
+@rendermode InteractiveServer
+
+<PageTitle>Estados</PageTitle>
+
+<h3>Gestión de Estados</h3>
+
+@* Barra de acciones principales *@
+<div class="mb-3 d-flex gap-2">
+    @* Botones para acciones generales *@
+    <button type="button" class="btn btn-outline-secondary" @onclick="ProbarConexion">
+        <span class="oi oi-wifi" aria-hidden="true"></span> Probar conexión
+    </button>
+    <button type="button" class="btn btn-outline-primary" @onclick="CargarEstados">
+        <span class="oi oi-reload" aria-hidden="true"></span> Mostrar todos
+    </button>
+    <button type="button" class="btn btn-outline-dark" @onclick="LimpiarFormulario">
+        <span class="oi oi-x" aria-hidden="true"></span> Limpiar
+    </button>
+</div>
+
+@* Área de mensajes para retroalimentación al usuario *@
+@if (!string.IsNullOrWhiteSpace(mensaje))
+{
+    <div class="@claseAviso" role="alert">@mensaje</div>
+}
+
+@* Formulario para crear/editar estados *@
+<h4>Formulario de Estado</h4>
+
+<EditForm Model="estadoActual" OnValidSubmit="GuardarSegunEstado" FormName="EstadoForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    @* Campos del formulario *@
+    <div class="row g-3">
+        @* Campo Id - Solo para búsqueda *@
+        <div class="col-md-2">
+            <label class="form-label">ID</label>
+            <InputNumber class="form-control" @bind-Value="estadoActual.Id" />
+            <div class="form-text">Solo para búsqueda</div>
+        </div>
+
+        @* Campo Nombre *@
+        <div class="col-md-5">
+            <label class="form-label">Nombre</label>
+            <InputText class="form-control" @bind-Value="estadoActual.Nombre" />
+        </div>
+
+        @* Campo Descripción *@
+        <div class="col-md-5">
+            <label class="form-label">Descripción</label>
+            <InputText class="form-control" @bind-Value="estadoActual.Descripcion" />
+        </div>
+    </div>
+
+    @* Botones de acción del formulario *@
+    <div class="mt-3 d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-primary">
+            <span class="oi oi-check" aria-hidden="true"></span> @textoBotonGuardar
+        </button>
+        <button type="button" class="btn btn-secondary" @onclick="BuscarPorId">
+            <span class="oi oi-magnifying-glass" aria-hidden="true"></span> Buscar
+        </button>
+        <button type="button" class="btn btn-warning" @onclick="ActualizarEstado" disabled="@(!existeEstado)">
+            <span class="oi oi-pencil" aria-hidden="true"></span> Actualizar
+        </button>
+        <button type="button" class="btn btn-danger" @onclick="EliminarEstado" disabled="@(!existeEstado)">
+            <span class="oi oi-trash" aria-hidden="true"></span> Eliminar
+        </button>
+    </div>
+</EditForm>
+
+<hr />
+
+@* Tabla de estados *@
+@if (cargando)
+{
+    <p><em>Cargando estados...</em></p>
+}
+else if (listaEstados.Count == 0)
+{
+    <p>No hay estados registrados.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var estado in listaEstados)
+            {
+                <tr>
+                    <td>@estado.Id</td>
+                    <td>@estado.Nombre</td>
+                    <td>@estado.Descripcion</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" @onclick="() => CargarEnFormulario(estado)">
+                            <span class="oi oi-data-transfer-upload" aria-hidden="true"></span> Cargar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    // ==========================================
+    // VARIABLES DE ESTADO
+    // ==========================================
+
+    // Lista para almacenar todos los estados
+    private List<Estado> listaEstados = new();
+
+    // Objeto para manejar el estado actual en el formulario
+    [SupplyParameterFromForm]
+    private Estado estadoActual { get; set; } = new();
+
+    // Variables de control de estado
+    private bool existeEstado = false;
+    private string textoBotonGuardar = "Crear";
+    private string mensaje = "";
+    private string claseAviso = "alert alert-info";
+    private bool cargando = false;
+
+    // URL base para la API
+    private const string urlBaseApi = "api/estado";
+
+    // ==========================================
+    // CICLO DE VIDA DEL COMPONENTE
+    // ==========================================
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarEstados();
+    }
+
+    // ==========================================
+    // MÉTODOS CRUD
+    // ==========================================
+
+    /// <summary>
+    /// Obtiene la lista completa de estados desde la API
+    /// HTTP GET /api/estado
+    /// </summary>
+    private async Task CargarEstados()
+    {
+        try
+        {
+            cargando = true;
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var respuesta = await http.GetFromJsonAsync<RespuestaApi<List<Estado>>>(urlBaseApi);
+
+            listaEstados = respuesta?.Datos ?? new List<Estado>();
+
+            mensaje = $"Se cargaron {listaEstados.Count} estados.";
+            claseAviso = "alert alert-success";
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al cargar estados: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    /// <summary>
+    /// Busca un estado específico por su ID
+    /// HTTP GET /api/estado/id/{id}
+    /// </summary>
+    private async Task BuscarPorId()
+    {
+        LimpiarMensajes();
+
+        if (estadoActual.Id == null || estadoActual.Id <= 0)
+        {
+            mensaje = "Por favor, ingrese un ID válido para buscar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var url = $"{urlBaseApi}/id/{estadoActual.Id}";
+            var respuesta = await http.GetFromJsonAsync<RespuestaApi<List<Estado>>>(url);
+            var encontrado = respuesta?.Datos?.FirstOrDefault();
+
+            if (encontrado != null)
+            {
+                estadoActual = new Estado
+                {
+                    Id = encontrado.Id,
+                    Nombre = encontrado.Nombre,
+                    Descripcion = encontrado.Descripcion
+                };
+                existeEstado = true;
+                textoBotonGuardar = "Actualizar";
+                mensaje = "Estado encontrado.";
+                claseAviso = "alert alert-success";
+            }
+            else
+            {
+                mensaje = "Estado no encontrado.";
+                claseAviso = "alert alert-warning";
+                existeEstado = false;
+                textoBotonGuardar = "Crear";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al buscar: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Decide si crear o actualizar según el estado
+    /// </summary>
+    private async Task GuardarSegunEstado()
+    {
+        if (existeEstado)
+            await ActualizarEstado();
+        else
+            await CrearEstado();
+    }
+
+    /// <summary>
+    /// Crea un nuevo estado en la base de datos
+    /// IMPORTANTE: No envía el ID porque es autoincrement en la BD
+    /// HTTP POST /api/estado
+    /// </summary>
+    private async Task CrearEstado()
+    {
+        LimpiarMensajes();
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+
+            var estadoParaCrear = new
+            {
+                Nombre = estadoActual.Nombre,
+                Descripcion = estadoActual.Descripcion
+            };
+
+            var respuesta = await http.PostAsJsonAsync(urlBaseApi, estadoParaCrear);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                var estadoCreado = await respuesta.Content.ReadFromJsonAsync<Estado>();
+                if (estadoCreado != null)
+                {
+                    mensaje = $"Estado creado con éxito. ID asignado: {estadoCreado.Id}";
+                    claseAviso = "alert alert-success";
+                    await CargarEstados();
+                    LimpiarFormulario();
+                }
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"No se pudo crear el estado: {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al crear: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Actualiza un estado existente en la base de datos
+    /// IMPORTANTE: No modifica el ID ya que es autoincrement y asignado por la BD
+    /// HTTP PUT /api/estado/id/{id}
+    /// </summary>
+    private async Task ActualizarEstado()
+    {
+        LimpiarMensajes();
+
+        if (estadoActual.Id == null || estadoActual.Id <= 0)
+        {
+            mensaje = "Debe buscar un estado válido antes de actualizar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var url = $"{urlBaseApi}/id/{estadoActual.Id}";
+
+            var estadoParaActualizar = new
+            {
+                Nombre = estadoActual.Nombre,
+                Descripcion = estadoActual.Descripcion
+            };
+
+            var respuesta = await http.PutAsJsonAsync(url, estadoParaActualizar);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = $"Estado con ID {estadoActual.Id} actualizado con éxito.";
+                claseAviso = "alert alert-success";
+                await CargarEstados();
+                LimpiarFormulario();
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"Error al actualizar estado: {respuesta.StatusCode} - {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al actualizar: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Elimina un estado existente
+    /// HTTP DELETE /api/estado/id/{id}
+    /// </summary>
+    private async Task EliminarEstado()
+    {
+        LimpiarMensajes();
+
+        if (estadoActual.Id == null || estadoActual.Id <= 0)
+        {
+            mensaje = "Debe buscar un estado primero para poder eliminar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var url = $"{urlBaseApi}/id/{estadoActual.Id}";
+            var respuesta = await http.DeleteAsync(url);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Estado eliminado con éxito.";
+                claseAviso = "alert alert-success";
+                await CargarEstados();
+                LimpiarFormulario();
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"No se pudo eliminar el estado: {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al eliminar: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    // ==========================================
+    // MÉTODOS AUXILIARES
+    // ==========================================
+
+    /// <summary>
+    /// Prueba la conexión con la API
+    /// </summary>
+    private async Task ProbarConexion()
+    {
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var respuesta = await http.GetAsync(urlBaseApi);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Conexión exitosa con la API.";
+                claseAviso = "alert alert-success";
+            }
+            else
+            {
+                mensaje = $"Error de conexión: {respuesta.StatusCode}";
+                claseAviso = "alert alert-warning";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error de conexión: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Carga los datos de un estado en el formulario
+    /// </summary>
+    private void CargarEnFormulario(Estado e)
+    {
+        estadoActual = new Estado
+        {
+            Id = e.Id,
+            Nombre = e.Nombre,
+            Descripcion = e.Descripcion
+        };
+
+        existeEstado = true;
+        textoBotonGuardar = "Actualizar";
+        mensaje = "Estado cargado en el formulario.";
+        claseAviso = "alert alert-info";
+    }
+
+    /// <summary>
+    /// Limpia los mensajes de estado
+    /// </summary>
+    private void LimpiarMensajes()
+    {
+        mensaje = "";
+        claseAviso = "";
+    }
+
+    /// <summary>
+    /// Reinicia el formulario a su estado inicial
+    /// </summary>
+    private void LimpiarFormulario()
+    {
+        estadoActual = new Estado();
+        existeEstado = false;
+        textoBotonGuardar = "Crear";
+        LimpiarMensajes();
+    }
+}

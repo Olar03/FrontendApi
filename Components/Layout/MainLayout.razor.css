@@ -1,0 +1,76 @@
+html, body {
+    height: 100%;
+    font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #dff6ff, #84c1ff, #1a73e8);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    color: #333;
+}
+
+.main-container {
+    display: grid;
+    grid-template-rows: auto 1fr auto;  /* header | content | footer */
+    min-height: 100vh;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden; /* Evita scrolls innecesarios */
+    align-items: center;
+}
+
+/* Header fijo en la parte superior */
+header {
+    top: 0;
+    z-index: 1030;
+    width: 100%;
+    color: rgba(29, 116, 215, 0.9);
+    align-items:  center;
+}
+
+/* Contenido centrado */
+.main-content {
+  overflow-y: auto;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 0; /* Permite que el contenido se comprima si es necesario */
+    align-items: center; /* Centra el contenido horizontalmente */
+}
+
+/* Footer minimalista y fijo al final */
+.footer-division { /* Estilo del footer */
+    color: black; /* Color de texto del footer */
+    text-align: center; 
+    padding: 0.5rem 1rem; /* Padding mínimo */
+    font-size: 0.8rem; /* Fuente más pequeña */
+    min-height: auto;
+    line-height: 1.2; /* Altura de línea compacta */
+    border-top: 1px solid rgba(255, 255, 255, 0.2); /* Separador sutil */
+    position: relative; /* Para asegurar posicionamiento */
+    z-index: 10;
+    align-items: center; /* Centra el contenido horizontalmente */
+}
+
+.footer-division a { /* Enlaces en el footer */
+    color: #93c5fd;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-division a:hover { /* Efecto hover para enlaces */
+    color: white;
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) { /* Ajustes para pantallas pequeñas */
+    .main-content {
+        padding: 1rem;
+    }
+    
+    .footer-division {
+        padding: 0.5rem;
+        font-size: 0.8rem;
+    }
+}

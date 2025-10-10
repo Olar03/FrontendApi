@@ -1,0 +1,480 @@
+@*
+    -Pagina de Tipos de Responsable
+    -Autor: Victor Oliveros
+    -Fecha: 10/2025
+    -Version: 1.0
+    -Descripcion: Pagina que muestra una lista de tipos de responsable y permite modificaciones de acuerdo a un CRUD obtenidas de una API REST.
+*@
+@page "/tipos-responsable"
+
+@using System.Net.Http.Json
+@using FrontendBlazorApi.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Linq
+@inject IHttpClientFactory fabricaHttp
+@rendermode InteractiveServer
+
+<PageTitle>Tipos de Responsable</PageTitle>
+
+<h3>Gestión de Tipos de Responsable</h3>
+
+@* Barra de acciones principales *@
+<div class="mb-3 d-flex gap-2">
+    @* Botones para acciones generales *@
+    <button type="button" class="btn btn-outline-secondary" @onclick="ProbarConexion">
+        <span class="oi oi-wifi" aria-hidden="true"></span> Probar conexión
+    </button>
+    <button type="button" class="btn btn-outline-primary" @onclick="CargarTiposResponsable">
+        <span class="oi oi-reload" aria-hidden="true"></span> Mostrar todos
+    </button>
+    <button type="button" class="btn btn-outline-dark" @onclick="LimpiarFormulario">
+        <span class="oi oi-x" aria-hidden="true"></span> Limpiar
+    </button>
+</div>
+
+@* Área de mensajes para retroalimentación al usuario *@
+@if (!string.IsNullOrWhiteSpace(mensaje))
+{
+    <div class="@claseAviso" role="alert">@mensaje</div>
+}
+
+@* Formulario para crear/editar tipos de responsable *@
+<h4>Formulario de Tipo de Responsable</h4>
+
+<EditForm Model="tipoResponsableActual" OnValidSubmit="GuardarSegunEstado" FormName="TipoResponsableForm">
+    <DataAnnotationsValidator /> @* Valida los datos según las anotaciones en el modelo *@
+    <ValidationSummary /> @* Muestra un resumen de errores de validación *@
+
+    @* Campos del formulario *@
+    <div class="row g-3">
+        @* Campo Id - Solo para búsqueda *@
+        <div class="col-md-2">
+            <label class="form-label">ID</label>
+            <InputNumber class="form-control" @bind-Value="tipoResponsableActual.Id" />
+            <div class="form-text">Solo para búsqueda</div>
+        </div>
+
+        @* Campo Título *@
+        <div class="col-md-5">
+            <label class="form-label">Título</label>
+            <InputText class="form-control" @bind-Value="tipoResponsableActual.Titulo" />
+        </div>
+
+        @* Campo Descripción *@
+        <div class="col-md-5">
+            <label class="form-label">Descripción</label>
+            <InputText class="form-control" @bind-Value="tipoResponsableActual.Descripcion" />
+        </div>
+    </div>
+
+    @* Botones de acción del formulario *@
+    <div class="mt-3 d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-primary">
+            <span class="oi oi-check" aria-hidden="true"></span> @textoBotonGuardar
+        </button>
+        <button type="button" class="btn btn-secondary" @onclick="BuscarPorId">
+            <span class="oi oi-magnifying-glass" aria-hidden="true"></span> Buscar
+        </button>
+        <button type="button" class="btn btn-warning" @onclick="ActualizarTipoResponsable"
+            disabled="@(!existeTipoResponsable)">
+            <span class="oi oi-pencil" aria-hidden="true"></span> Actualizar
+        </button>
+        <button type="button" class="btn btn-danger" @onclick="EliminarTipoResponsable"
+            disabled="@(!existeTipoResponsable)">
+            <span class="oi oi-trash" aria-hidden="true"></span> Eliminar
+        </button>
+    </div>
+</EditForm>
+
+<hr />
+
+@* Tabla de tipos de responsable *@
+@if (cargando)
+{
+    <p><em>Cargando tipos de responsable...</em></p>
+}
+else if (listaTiposResponsable.Count == 0)
+{
+    <p>No hay tipos de responsable registrados.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Título</th>
+                <th>Descripción</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var tipoResponsable in listaTiposResponsable)
+            {
+                <tr>
+                    <td>@tipoResponsable.Id</td>
+                    <td>@tipoResponsable.Titulo</td>
+                    <td>@tipoResponsable.Descripcion</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" @onclick="() => CargarEnFormulario(tipoResponsable)">
+                            <span class="oi oi-data-transfer-upload" aria-hidden="true"></span> Cargar
+                        </button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    // ==========================================
+    // VARIABLES DE ESTADO
+    // ==========================================
+
+    // Lista para almacenar todos los tipos de responsable
+    private List<TipoResponsable> listaTiposResponsable = new();
+
+    // Objeto para manejar el tipo de responsable actual en el formulario
+    [SupplyParameterFromForm]
+    private TipoResponsable tipoResponsableActual { get; set; } = new();
+
+    // Variables de control de estado
+    private bool existeTipoResponsable = false;
+    private string textoBotonGuardar = "Crear";
+    private string mensaje = "";
+    private string claseAviso = "alert alert-info";
+    private bool cargando = false;
+
+    // URL base para la API
+    private const string urlBaseApi = "api/tiporesponsable";
+
+    // ==========================================
+    // CICLO DE VIDA DEL COMPONENTE
+    // ==========================================
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarTiposResponsable();
+    }
+
+    // ==========================================
+    // MÉTODOS CRUD
+    // ==========================================
+
+    /// <summary>
+    /// Obtiene la lista completa de tipos de responsable desde la API
+    /// HTTP GET /api/tiporesponsable
+    /// </summary>
+    private async Task CargarTiposResponsable()
+    {
+        try
+        {
+            cargando = true;
+            // Crear cliente HTTP usando la fábrica
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            // Realizar petición GET y deserializar respuesta
+            var respuesta = await http.GetFromJsonAsync<RespuestaApi<List<TipoResponsable>>>(urlBaseApi);
+
+            listaTiposResponsable = respuesta?.Datos ?? new List<TipoResponsable>();
+
+            mensaje = $"Se cargaron {listaTiposResponsable.Count} tipos de responsable.";
+            claseAviso = "alert alert-success";
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al cargar tipos de responsable: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    /// <summary>
+    /// Busca un tipo de responsable específico por su ID
+    /// HTTP GET /api/tiporesponsable/id/{id}
+    /// </summary>
+    private async Task BuscarPorId()
+    {
+        LimpiarMensajes();
+
+        if (tipoResponsableActual.Id == null || tipoResponsableActual.Id <= 0)
+        {
+            mensaje = "Por favor, ingrese un ID válido para buscar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+
+            var url = $"{urlBaseApi}/id/{tipoResponsableActual.Id}";
+
+            var respuesta = await http.GetFromJsonAsync<RespuestaApi<List<TipoResponsable>>>(url);
+
+            var encontrado = respuesta?.Datos?.FirstOrDefault();
+
+            if (encontrado != null)
+            {
+                // Tipo de responsable encontrado
+                tipoResponsableActual = new TipoResponsable
+                {
+                    Id = encontrado.Id,
+                    Titulo = encontrado.Titulo,
+                    Descripcion = encontrado.Descripcion
+                };
+                existeTipoResponsable = true;
+                textoBotonGuardar = "Actualizar";
+                mensaje = "Tipo de responsable encontrado.";
+                claseAviso = "alert alert-success";
+            }
+            else
+            {
+                // Tipo de responsable no encontrado
+                mensaje = "Tipo de responsable no encontrado.";
+                claseAviso = "alert alert-warning";
+                existeTipoResponsable = false;
+                textoBotonGuardar = "Crear";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al buscar: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Decide si crear o actualizar según el estado
+    /// </summary>
+    private async Task GuardarSegunEstado()
+    {
+        if (existeTipoResponsable)
+            await ActualizarTipoResponsable();
+        else
+            await CrearTipoResponsable();
+    }
+
+    /// <summary>
+    /// Crea un nuevo tipo de responsable en la base de datos
+    /// IMPORTANTE: No envía el ID porque es autoincrement en la BD
+    /// HTTP POST /api/tiporesponsable
+    /// </summary>
+    private async Task CrearTipoResponsable()
+    {
+        LimpiarMensajes();
+
+        try
+        {
+            // Crear cliente HTTP usando la fábrica configurada
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+
+            // Crear objeto para enviar sin el ID (será asignado automáticamente por la BD)
+            var tipoResponsableParaCrear = new
+            {
+                Titulo = tipoResponsableActual.Titulo,
+                Descripcion = tipoResponsableActual.Descripcion
+            };
+
+            // Enviar petición POST con el objeto sin ID
+            var respuesta = await http.PostAsJsonAsync(urlBaseApi, tipoResponsableParaCrear);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                // El tipo de responsable fue creado exitosamente
+                var tipoResponsableCreado = await respuesta.Content.ReadFromJsonAsync<TipoResponsable>();
+                if (tipoResponsableCreado != null)
+                {
+                    mensaje = $"Tipo de responsable creado con éxito. ID asignado: {tipoResponsableCreado.Id}";
+                    claseAviso = "alert alert-success";
+                    await CargarTiposResponsable(); // Recargar la lista
+                    LimpiarFormulario(); // Limpiar el formulario
+                }
+            }
+            else
+            {
+                // Error al crear el tipo de responsable
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"No se pudo crear el tipo de responsable: {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al crear: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Actualiza un tipo de responsable existente en la base de datos
+    /// IMPORTANTE: No modifica el ID ya que es autoincrement y asignado por la BD
+    /// HTTP PUT /api/tiporesponsable/id/{id}
+    /// </summary>
+    private async Task ActualizarTipoResponsable()
+    {
+        LimpiarMensajes();
+
+        // Validar que existe un ID válido para actualizar
+        if (tipoResponsableActual.Id == null || tipoResponsableActual.Id <= 0)
+        {
+            mensaje = "Debe buscar un tipo de responsable válido antes de actualizar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            // Crear cliente HTTP usando la fábrica configurada
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+
+            // Construir URL con el ID del tipo de responsable a actualizar
+            var url = $"{urlBaseApi}/id/{tipoResponsableActual.Id}";
+
+            // Crear objeto para actualizar SIN incluir el ID (será ignorado por la API)
+            var tipoResponsableParaActualizar = new
+            {
+                Titulo = tipoResponsableActual.Titulo,
+                Descripcion = tipoResponsableActual.Descripcion
+            };
+
+            // Enviar petición PUT con los datos a actualizar
+            var respuesta = await http.PutAsJsonAsync(url, tipoResponsableParaActualizar);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                // Actualización exitosa
+                mensaje = $"Tipo de responsable con ID {tipoResponsableActual.Id} actualizado con éxito.";
+                claseAviso = "alert alert-success";
+                await CargarTiposResponsable(); // Recargar la lista para mostrar cambios
+                LimpiarFormulario(); // Limpiar formulario después de actualizar
+            }
+            else
+            {
+                // Error en la actualización
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"Error al actualizar tipo de responsable: {respuesta.StatusCode} - {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al actualizar: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Elimina un tipo de responsable existente
+    /// HTTP DELETE /api/tiporesponsable/id/{id}
+    /// </summary>
+    private async Task EliminarTipoResponsable()
+    {
+        LimpiarMensajes();
+
+        if (tipoResponsableActual.Id == null || tipoResponsableActual.Id <= 0)
+        {
+            mensaje = "Debe buscar un tipo de responsable primero para poder eliminar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var url = $"{urlBaseApi}/id/{tipoResponsableActual.Id}";
+            var respuesta = await http.DeleteAsync(url);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Tipo de responsable eliminado con éxito.";
+                claseAviso = "alert alert-success";
+                await CargarTiposResponsable();
+                LimpiarFormulario();
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"No se pudo eliminar el tipo de responsable: {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al eliminar: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    // ==========================================
+    // MÉTODOS AUXILIARES
+    // ==========================================
+
+    /// <summary>
+    /// Prueba la conexión con la API
+    /// </summary>
+    private async Task ProbarConexion()
+    {
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var respuesta = await http.GetAsync(urlBaseApi);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Conexión exitosa con la API.";
+                claseAviso = "alert alert-success";
+            }
+            else
+            {
+                mensaje = $"Error de conexión: {respuesta.StatusCode}";
+                claseAviso = "alert alert-warning";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error de conexión: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Carga los datos de un tipo de responsable en el formulario
+    /// </summary>
+    private void CargarEnFormulario(TipoResponsable tr)
+    {
+        tipoResponsableActual = new TipoResponsable
+        {
+            Id = tr.Id,
+            Titulo = tr.Titulo,
+            Descripcion = tr.Descripcion
+        };
+
+        existeTipoResponsable = true;
+        textoBotonGuardar = "Actualizar";
+        mensaje = "Tipo de responsable cargado en el formulario.";
+        claseAviso = "alert alert-info";
+    }
+
+    /// <summary>
+    /// Limpia los mensajes de estado
+    /// </summary>
+    private void LimpiarMensajes()
+    {
+        mensaje = "";
+        claseAviso = "";
+    }
+
+    /// <summary>
+    /// Reinicia el formulario a su estado inicial
+    /// </summary>
+    private void LimpiarFormulario()
+    {
+        tipoResponsableActual = new TipoResponsable();
+        existeTipoResponsable = false;
+        textoBotonGuardar = "Crear";
+        LimpiarMensajes();
+    }
+}
