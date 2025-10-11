@@ -20,7 +20,6 @@ C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\scopedcss\Components\
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\scopedcss\Components\Layout\NavMenu.razor.rz.scp.css
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\scopedcss\bundle\FrontendBlazorApi.styles.css
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\scopedcss\projectbundle\FrontendBlazorApi.bundle.scp.css
-C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\hejoe847o0-da95v2qkru.gz
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\fcljzh6l7u-bpk8xqwxhs.gz
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\ofsucuos7g-8inm30yfxf.gz
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\staticwebassets.build.json
@@ -38,3 +37,4 @@ C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\Frontend.1D59CE2F.Up2
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\p9qfri4flf-3f36p8i1qj.gz
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\oj55z46223-3f36p8i1qj.gz
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\FrontendBlazorApi.sourcelink.json
+C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\hejoe847o0-37vib23wsy.gz
