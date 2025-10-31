@@ -1,0 +1,756 @@
+====================================================================================================
+MODELO: Usuario.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Usuario
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        [MaxLength(150)]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(255)]
+        public string Contrasena { get; set; } = string.Empty;
+
+        public string? RutaAvatar { get; set; }
+
+        [Required]
+        public bool Activo { get; set; } = true;
+
+        // Navegación
+        public ICollection<Responsable>? Responsables { get; set; }
+        public ICollection<Archivo>? Archivos { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: TipoResponsable.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class TipoResponsable
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        [MaxLength(50)]
+        public string Titulo { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(255)]
+        public string Descripcion { get; set; } = string.Empty;
+
+        // Navegación
+        public ICollection<Responsable>? Responsables { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Responsable.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Responsable
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        public int IdTipoResponsable { get; set; }
+
+        [Required]
+        public int IdUsuario { get; set; }
+
+        [Required]
+        [MaxLength(255)]
+        public string Nombre { get; set; } = string.Empty;
+
+        // Navegación
+        [ForeignKey("IdTipoResponsable")]
+        public TipoResponsable? TipoResponsable { get; set; }
+
+        [ForeignKey("IdUsuario")]
+        public Usuario? Usuario { get; set; }
+
+        public ICollection<Proyecto>? Proyectos { get; set; }
+        public ICollection<Responsable_Entregable>? ResponsableEntregables { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: TipoProyecto.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class TipoProyecto
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        [MaxLength(150)]
+        public string Nombre { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(255)]
+        public string Descripcion { get; set; } = string.Empty;
+
+        // Navegación
+        public ICollection<Proyecto>? Proyectos { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Estado.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Estado
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        [MaxLength(50)]
+        public string Nombre { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(255)]
+        public string Descripcion { get; set; } = string.Empty;
+
+        // Navegación
+        public ICollection<Estado_Proyecto>? EstadoProyectos { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Proyecto.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Proyecto
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        public int? IdProyectoPadre { get; set; }
+
+        [Required]
+        public int IdResponsable { get; set; }
+
+        [Required]
+        public int IdTipoProyecto { get; set; }
+
+        [MaxLength(50)]
+        public string? Codigo { get; set; }
+
+        [Required]
+        [MaxLength(255)]
+        public string Titulo { get; set; } = string.Empty;
+
+        public string? Descripcion { get; set; }
+
+        public DateTime? FechaInicio { get; set; }
+
+        public DateTime? FechaFinPrevista { get; set; }
+
+        public DateTime? FechaModificacion { get; set; }
+
+        public DateTime? FechaFinalizacion { get; set; }
+
+        public string? RutaLogo { get; set; }
+
+        // Navegación
+        [ForeignKey("IdProyectoPadre")]
+        public Proyecto? ProyectoPadre { get; set; }
+
+        [ForeignKey("IdResponsable")]
+        public Responsable? Responsable { get; set; }
+
+        [ForeignKey("IdTipoProyecto")]
+        public TipoProyecto? TipoProyecto { get; set; }
+
+        public ICollection<Proyecto>? ProyectosHijos { get; set; }
+        public Estado_Proyecto? EstadoProyecto { get; set; }
+        public ICollection<Proyecto_Producto>? ProyectoProductos { get; set; }
+        public ICollection<Presupuesto>? Presupuestos { get; set; }
+        public ICollection<DistribucionPresupuesto>? DistribucionesPresupuesto { get; set; }
+        public ICollection<Meta_Proyecto>? MetaProyectos { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Estado_Proyecto.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Estado_Proyecto
+    {
+        [Key]
+        public int IdProyecto { get; set; }
+
+        [Required]
+        public int IdEstado { get; set; }
+
+        // Navegación
+        [ForeignKey("IdProyecto")]
+        public Proyecto? Proyecto { get; set; }
+
+        [ForeignKey("IdEstado")]
+        public Estado? Estado { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: TipoProducto.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class TipoProducto
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        [MaxLength(150)]
+        public string Nombre { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(255)]
+        public string Descripcion { get; set; } = string.Empty;
+
+        // Navegación
+        public ICollection<Producto>? Productos { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Producto.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Producto
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        public int IdTipoProducto { get; set; }
+
+        [MaxLength(50)]
+        public string? Codigo { get; set; }
+
+        [Required]
+        [MaxLength(255)]
+        public string Titulo { get; set; } = string.Empty;
+
+        public string? Descripcion { get; set; }
+
+        public DateTime? FechaInicio { get; set; }
+
+        public DateTime? FechaFinPrevista { get; set; }
+
+        public DateTime? FechaModificacion { get; set; }
+
+        public DateTime? FechaFinalizacion { get; set; }
+
+        public string? RutaLogo { get; set; }
+
+        // Navegación
+        [ForeignKey("IdTipoProducto")]
+        public TipoProducto? TipoProducto { get; set; }
+
+        public ICollection<Proyecto_Producto>? ProyectoProductos { get; set; }
+        public ICollection<Producto_Entregable>? ProductoEntregables { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Proyecto_Producto.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Proyecto_Producto
+    {
+        [Required]
+        public int IdProyecto { get; set; }
+
+        [Required]
+        public int IdProducto { get; set; }
+
+        public DateTime? FechaAsociacion { get; set; }
+
+        // Navegación
+        [ForeignKey("IdProyecto")]
+        public Proyecto? Proyecto { get; set; }
+
+        [ForeignKey("IdProducto")]
+        public Producto? Producto { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Entregable.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Entregable
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [MaxLength(50)]
+        public string? Codigo { get; set; }
+
+        [Required]
+        [MaxLength(255)]
+        public string Titulo { get; set; } = string.Empty;
+
+        public string? Descripcion { get; set; }
+
+        public DateTime? FechaInicio { get; set; }
+
+        public DateTime? FechaFinPrevista { get; set; }
+
+        public DateTime? FechaModificacion { get; set; }
+
+        public DateTime? FechaFinalizacion { get; set; }
+
+        // Navegación
+        public ICollection<Producto_Entregable>? ProductoEntregables { get; set; }
+        public ICollection<Responsable_Entregable>? ResponsableEntregables { get; set; }
+        public ICollection<Archivo_Entregable>? ArchivoEntregables { get; set; }
+        public ICollection<Actividad>? Actividades { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Producto_Entregable.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Producto_Entregable
+    {
+        [Required]
+        public int IdProducto { get; set; }
+
+        [Required]
+        public int IdEntregable { get; set; }
+
+        public DateTime? FechaAsociacion { get; set; }
+
+        // Navegación
+        [ForeignKey("IdProducto")]
+        public Producto? Producto { get; set; }
+
+        [ForeignKey("IdEntregable")]
+        public Entregable? Entregable { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Responsable_Entregable.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Responsable_Entregable
+    {
+        [Required]
+        public int IdResponsable { get; set; }
+
+        [Required]
+        public int IdEntregable { get; set; }
+
+        public DateTime? FechaAsociacion { get; set; }
+
+        // Navegación
+        [ForeignKey("IdResponsable")]
+        public Responsable? Responsable { get; set; }
+
+        [ForeignKey("IdEntregable")]
+        public Entregable? Entregable { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Archivo.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Archivo
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        public int IdUsuario { get; set; }
+
+        [Required]
+        public string Ruta { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(255)]
+        public string Nombre { get; set; } = string.Empty;
+
+        [MaxLength(50)]
+        public string? Tipo { get; set; }
+
+        public DateTime? Fecha { get; set; }
+
+        // Navegación
+        [ForeignKey("IdUsuario")]
+        public Usuario? Usuario { get; set; }
+
+        public ICollection<Archivo_Entregable>? ArchivoEntregables { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Archivo_Entregable.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Archivo_Entregable
+    {
+        [Required]
+        public int IdArchivo { get; set; }
+
+        [Required]
+        public int IdEntregable { get; set; }
+
+        // Navegación
+        [ForeignKey("IdArchivo")]
+        public Archivo? Archivo { get; set; }
+
+        [ForeignKey("IdEntregable")]
+        public Entregable? Entregable { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Actividad.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Actividad
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        public int IdEntregable { get; set; }
+
+        [Required]
+        [MaxLength(255)]
+        public string Titulo { get; set; } = string.Empty;
+
+        public string? Descripcion { get; set; }
+
+        public DateTime? FechaInicio { get; set; }
+
+        public DateTime? FechaFinPrevista { get; set; }
+
+        public DateTime? FechaModificacion { get; set; }
+
+        public DateTime? FechaFinalizacion { get; set; }
+
+        public int? Prioridad { get; set; }
+
+        [Range(0, 100)]
+        public int? PorcentajeAvance { get; set; }
+
+        // Navegación
+        [ForeignKey("IdEntregable")]
+        public Entregable? Entregable { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Presupuesto.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Presupuesto
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        public int IdProyecto { get; set; }
+
+        [Required]
+        [Column(TypeName = "decimal(15,2)")]
+        public decimal MontoSolicitado { get; set; }
+
+        [Required]
+        [MaxLength(20)]
+        public string Estado { get; set; } = "Pendiente";
+
+        [Column(TypeName = "decimal(15,2)")]
+        public decimal? MontoAprobado { get; set; }
+
+        public int? PeriodoAnio { get; set; }
+
+        public DateTime? FechaSolicitud { get; set; }
+
+        public DateTime? FechaAprobacion { get; set; }
+
+        public string? Observaciones { get; set; }
+
+        // Navegación
+        [ForeignKey("IdProyecto")]
+        public Proyecto? Proyecto { get; set; }
+
+        public ICollection<DistribucionPresupuesto>? DistribucionesPresupuesto { get; set; }
+        public ICollection<EjecucionPresupuesto>? EjecucionesPresupuesto { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: DistribucionPresupuesto.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class DistribucionPresupuesto
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        public int IdPresupuestoPadre { get; set; }
+
+        [Required]
+        public int IdProyectoHijo { get; set; }
+
+        [Required]
+        [Column(TypeName = "decimal(15,2)")]
+        public decimal MontoAsignado { get; set; }
+
+        // Navegación
+        [ForeignKey("IdPresupuestoPadre")]
+        public Presupuesto? PresupuestoPadre { get; set; }
+
+        [ForeignKey("IdProyectoHijo")]
+        public Proyecto? ProyectoHijo { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: EjecucionPresupuesto.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class EjecucionPresupuesto
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        public int IdPresupuesto { get; set; }
+
+        [Required]
+        public int Anio { get; set; }
+
+        [Column(TypeName = "decimal(15,2)")]
+        public decimal? MontoPlaneado { get; set; }
+
+        [Column(TypeName = "decimal(15,2)")]
+        public decimal? MontoEjecutado { get; set; }
+
+        public string? Observaciones { get; set; }
+
+        // Navegación
+        [ForeignKey("IdPresupuesto")]
+        public Presupuesto? Presupuesto { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: VariableEstrategica.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class VariableEstrategica
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        [MaxLength(255)]
+        public string Titulo { get; set; } = string.Empty;
+
+        public string? Descripcion { get; set; }
+
+        // Navegación
+        public ICollection<ObjetivoEstrategico>? ObjetivosEstrategicos { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: ObjetivoEstrategico.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class ObjetivoEstrategico
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        public int IdVariable { get; set; }
+
+        [Required]
+        [MaxLength(255)]
+        public string Titulo { get; set; } = string.Empty;
+
+        public string? Descripcion { get; set; }
+
+        // Navegación
+        [ForeignKey("IdVariable")]
+        public VariableEstrategica? VariableEstrategica { get; set; }
+
+        public ICollection<MetaEstrategica>? MetasEstrategicas { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: MetaEstrategica.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class MetaEstrategica
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
+
+        [Required]
+        public int IdObjetivo { get; set; }
+
+        [Required]
+        [MaxLength(255)]
+        public string Titulo { get; set; } = string.Empty;
+
+        public string? Descripcion { get; set; }
+
+        // Navegación
+        [ForeignKey("IdObjetivo")]
+        public ObjetivoEstrategico? ObjetivoEstrategico { get; set; }
+
+        public ICollection<Meta_Proyecto>? MetaProyectos { get; set; }
+    }
+}
+
+====================================================================================================
+MODELO: Meta_Proyecto.cs
+====================================================================================================
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace TuProyecto.Models
+{
+    public class Meta_Proyecto
+    {
+        [Required]
+        public int IdMeta { get; set; }
+
+        [Required]
+        public int IdProyecto { get; set; }
+
+        public DateTime? FechaAsociacion { get; set; }
+
+        // Navegación
+        [ForeignKey("IdMeta")]
+        public MetaEstrategica? MetaEstrategica { get; set; }
+
+        [ForeignKey("IdProyecto")]
+        public Proyecto? Proyecto { get; set; }
+    }
+}

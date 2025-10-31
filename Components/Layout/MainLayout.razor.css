@@ -4,7 +4,7 @@ html, body {
     background: linear-gradient(135deg, #dff6ff, #84c1ff, #1a73e8);
     background-repeat: no-repeat;
     background-attachment: fixed;
-    color: #333;
+    color: #333; /* Color de texto predeterminado */
 }
 
 .main-container {

@@ -1,79 +1,592 @@
-﻿@page "/"
+﻿@page "/dashboard"
 
-<PageTitle>Home</PageTitle>
+@using System.Net.Http.Json
+@using FrontendBlazorApi.Models
+@using FrontendBlazorApi.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using System.Linq
+
+@inject IHttpClientFactory fabricaHttp
+@inject AuthService authService
+@inject NavigationManager navegacion
+@rendermode InteractiveServer
+
+@inject FrontendBlazorApi.Services.AuthService AuthService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<PageTitle>Dashboard - Sistema de Gestión</PageTitle>
+
+@code {
+    private bool usuarioLogueado = false;
+    private string nombreUsuario = "Invitado";
+    private bool esAdmin = false;
+    private bool esTecnico = false;
+    private bool esUsuarioRegular = false;
+    private string tipoUsuario = "User";
+
+    protected override async Task OnInitializedAsync() // Verificar estado de autenticación al inicializar
+    {
+        usuarioLogueado = await AuthService.EstáAutenticado();
+
+        if (usuarioLogueado) // Si el usuario está autenticado
+        {
+            nombreUsuario = await AuthService.ObtenerUsuarioActual();
+            tipoUsuario = await AuthService.ObtenerTipoUsuario();
+            esAdmin = await AuthService.EsAdministrador();
+            esTecnico = await AuthService.EsTecnico();
+            esUsuarioRegular = await AuthService.EsUsuarioRegular();
+        }
+
+        StateHasChanged(); // Forzar la actualización de la interfaz
+    }
+
+    private void IrALogin() // Navegar a la página de login
+    {
+        NavigationManager.NavigateTo("/login");
+    }
+
+    private void NavegarA(string ruta) // Navegar a una ruta específica
+    {
+        NavigationManager.NavigateTo(ruta);
+    }
+
+    public void Dispose() // Implementación de IDisposable
+    {
+        // Limpiar recursos si es necesario
+    }
+}
+
+
 
 <div class="home-container">
+
     <div class="welcome-card">
-        <h1 class="display-4 text-primary mb-4">
+        <h4 class="display-4 text-primary mb-4">
             <i class="bi bi-house-heart-fill me-3"></i>
-            ¡Bienvenido!
-        </h1>
+            ¡Bienvenido @nombreUsuario!
+        </h4>
+
+        @if (usuarioLogueado)
+        {
+            <div class="alert alert-success mb-4">
+                <i class="bi bi-check-circle me-2"></i>
+                Sesión iniciada correctamente.
+                @if (esAdmin)
+                {
+                    <br>
+            
+                    <strong><i class="bi bi-shield-check text-warning"></i> Administrador del Sistema</strong>
+                    <br>
+
+                    <small>Acceso completo: gestión de usuarios, configuración y operaciones</small>
+                }
+                else if (esTecnico)
+                {
+                    <br>
+            
+                    <strong><i class="bi bi-tools text-info"></i> Técnico Operativo</strong>
+                    <br>
+
+                    <small>Acceso operativo: gestión de proyectos, actividades y presupuestos</small>
+                }
+                else if (esUsuarioRegular)
+                {
+                    <br>
+            
+                    <strong><i class="bi bi-person-check text-success"></i> Usuario Regular</strong>
+                    <br>
+
+                    <small>Acceso de consulta: visualización de información del sistema</small>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle me-2"></i>
+                Para acceder a todas las funciones, por favor <a href="/login" class="alert-link">inicie sesión</a>.
+            </div>
+        }
+
         <p class="lead text-muted mb-4">
-            Bienvenido a tu nueva aplicación. Este es el panel principal donde puedes navegar a las diferentes
-            secciones.
+            Sistema integral de gestión de proyectos. Navegue a las diferentes secciones usando el menú superior
+            o los accesos rápidos a continuación.
         </p>
 
+        <div class="row mb-4">
+            @if (usuarioLogueado)
+            {
+                <!-- Proyectos - Disponible para Admin y Técnico -->
+                @if (esAdmin || esTecnico)
+                {
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-primary h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-primary">
+                                    <i class="bi bi-kanban me-2"></i>Proyectos
+                                </h5>
+                                <p class="card-text">
+                                    @if (esAdmin)
+                                    {
+                                        <span>Gestiona proyectos, revisa el estado y avances del equipo.</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Administra proyectos operativos y seguimiento.</span>
+                                    }
+                                </p>
+                                <button class="btn btn-primary mt-auto" @onclick="@(() => NavegarA("/proyectos"))">
+                                    <i class="bi bi-arrow-right me-1"></i>Acceder
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (esUsuarioRegular)
+                {
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-secondary h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-secondary">
+                                    <i class="bi bi-eye me-2"></i>Ver Proyectos
+                                </h5>
+                                <p class="card-text">Consulta información y estado de proyectos.</p>
+                                <button class="btn btn-outline-secondary mt-auto" @onclick="@(() => NavegarA("/proyectos"))">
+                                    <i class="bi bi-arrow-right me-1"></i>Consultar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Actividades - Disponible para Admin y Técnico -->
+                @if (esAdmin || esTecnico)
+                {
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-success h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-success">
+                                    <i class="bi bi-list-check me-2"></i>Actividades
+                                </h5>
+                                <p class="card-text">Administra actividades y tareas del día a día.</p>
+                                <button class="btn btn-success mt-auto" @onclick="@(() => NavegarA("/actividades"))">
+                                    <i class="bi bi-arrow-right me-1"></i>Acceder
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (esUsuarioRegular)
+                {
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-secondary h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-secondary">
+                                    <i class="bi bi-eye me-2"></i>Ver Actividades
+                                </h5>
+                                <p class="card-text">Consulta actividades y estado de tareas.</p>
+                                <button class="btn btn-outline-secondary mt-auto" @onclick="@(() => NavegarA("/actividades"))">
+                                    <i class="bi bi-arrow-right me-1"></i>Consultar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Presupuestos - Disponible para Admin y Técnico -->
+                @if (esAdmin || esTecnico)
+                {
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-info h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-info">
+                                    <i class="bi bi-cash-stack me-2"></i>Presupuestos
+                                </h5>
+                                <p class="card-text">Control financiero y gestión de presupuestos.</p>
+                                <button class="btn btn-info mt-auto" @onclick="@(() => NavegarA("/presupuestos"))">
+                                    <i class="bi bi-arrow-right me-1"></i>Acceder
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (esUsuarioRegular)
+                {
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-secondary h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-secondary">
+                                    <i class="bi bi-eye me-2"></i>Ver Presupuestos
+                                </h5>
+                                <p class="card-text">Consulta información financiera.</p>
+                                <button class="btn btn-outline-secondary mt-auto" @onclick="@(() => NavegarA("/presupuestos"))">
+                                    <i class="bi bi-arrow-right me-1"></i>Consultar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="col-12">
+                    <div class="card border-warning">
+                        <div class="card-body text-center">
+                            <h5 class="card-title text-warning">
+                                <i class="bi bi-lock me-2"></i>Acceso Restringido
+                            </h5>
+                            <p class="card-text">Para acceder a las funciones del sistema, inicia sesión con tu cuenta.</p>
+                            <button class="btn btn-warning" @onclick="IrALogin">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar Sesión
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (usuarioLogueado && esAdmin)
+        {
+            <div class="admin-section">
+                <h4 class="text-primary mb-3">
+                    <i class="bi bi-shield-check me-2"></i>Panel de Administrador
+                </h4>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-warning h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-warning">
+                                    <i class="bi bi-people me-2"></i>Usuarios
+                                </h5>
+                                <p class="card-text">Gestión de usuarios y permisos del sistema.</p>
+                                <button class="btn btn-warning mt-auto" @onclick="@(() => NavegarA("/usuarios"))">
+                                    <i class="bi bi-arrow-right me-1"></i>Gestionar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-secondary h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-secondary">
+                                    <i class="bi bi-gear me-2"></i>Estados
+                                </h5>
+                                <p class="card-text">Configuración de estados y tipos del sistema.</p>
+                                <button class="btn btn-secondary mt-auto" @onclick="@(() => NavegarA("/estados"))">
+                                    <i class="bi bi-arrow-right me-1"></i>Configurar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (usuarioLogueado && esTecnico)
+        {
+            <div class="tecnico-section">
+                <h4 class="text-info mb-3">
+                    <i class="bi bi-tools me-2"></i>Panel Técnico Operativo
+                </h4>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-info h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-info">
+                                    <i class="bi bi-pie-chart me-2"></i>Distribución
+                                </h5>
+                                <p class="card-text">Gestión de distribución presupuestaria.</p>
+                                <button class="btn btn-info mt-auto"
+                                    @onclick="@(() => NavegarA("/distribucion-presupuestos"))">
+                                    <i class="bi bi-arrow-right me-1"></i>Acceder
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-success h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-success">
+                                    <i class="bi bi-graph-up me-2"></i>Ejecución
+                                </h5>
+                                <p class="card-text">Seguimiento de ejecución presupuestaria.</p>
+                                <button class="btn btn-success mt-auto"
+                                    @onclick="@(() => NavegarA("/ejecucion-presupuestos"))">
+                                    <i class="bi bi-arrow-right me-1"></i>Acceder
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-primary h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title text-primary">
+                                    <i class="bi bi-box me-2"></i>Productos
+                                </h5>
+                                <p class="card-text">Gestión de productos y entregables.</p>
+                                <button class="btn btn-primary mt-auto" @onclick="@(() => NavegarA("/productos"))">
+                                    <i class="bi bi-arrow-right me-1"></i>Acceder
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="row mt-5">
+            <div class="col-md-8">
+                <div class="card border-light">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-info-circle me-2"></i>Características del Sistema
+                        </h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Gestión completa de
+                                proyectos</li>
+                            <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Control de actividades
+                                y entregas</li>
+                            <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Seguimiento de
+                                presupuestos</li>
+                            <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Gestión de usuarios y
+                                permisos</li>
+                            <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Reportes y análisis
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="bi bi-headset me-2"></i>Soporte
+                        </h5>
+                        <p class="card-text">
+                            ¿Necesitas ayuda? Contáctanos para obtener asistencia técnica.
+                        </p>
+                        @if (usuarioLogueado)
+                        {
+                            <small class="text-muted">
+                                <i class="bi bi-person-badge me-1"></i>
+                                Sesión activa como: @nombreUsuario
+                            </small>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row g-4 mt-4">
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <i class="bi bi-people-fill text-primary mb-3"></i>
-                    <h5>Usuarios</h5>
-                    <p class="text-muted">Gestiona los usuarios del sistema</p>
-                    <a href="/usuarios" class="btn btn-outline-primary btn-sm">Ver usuarios</a>
+            <!-- Solo Admin puede gestionar usuarios -->
+            @if (esAdmin)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-people-fill text-primary mb-3"></i>
+                        <h5>Usuarios</h5>
+                        <p class="text-muted">Gestiona los usuarios del sistema</p>
+                        <a href="/usuarios" class="btn btn-outline-primary btn-sm">Gestionar usuarios</a>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <i class="bi bi-basket3-fill text-success mb-3"></i>
-                    <h5>Tipos de Productos</h5>
-                    <p class="text-muted">Administra tu catálogo de productos</p>
-                    <a href="/productos" class="btn btn-outline-success btn-sm">Ver productos</a>
+            }
+            else if (esTecnico || esUsuarioRegular)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-people text-secondary mb-3"></i>
+                        <h5>Usuarios</h5>
+                        <p class="text-muted">Consulta información de usuarios</p>
+                        <a href="/usuarios" class="btn btn-outline-secondary btn-sm">Ver usuarios</a>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <i class="bi bi-graph-up text-info mb-3"></i>
-                    <h5>Variables</h5>
-                    <p class="text-muted">Configura variables estratégicas</p>
-                    <a href="/variables-estrategicas" class="btn btn-outline-info btn-sm">Ver variables</a>
+            }
+
+            <!-- Admin y Técnico pueden gestionar productos -->
+            @if (esAdmin || esTecnico)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-basket3-fill text-success mb-3"></i>
+                        <h5>Productos</h5>
+                        <p class="text-muted">Administra tu catálogo de productos</p>
+                        <a href="/productos" class="btn btn-outline-success btn-sm">Gestionar productos</a>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <i class="bi bi-circle-fill text-info mb-3"></i>
-                    <h5>Estados</h5>
-                    <p class="text-muted">Revisa los estados y configuralos</p>
-                    <a href="/Estados" class="btn btn-outline-info btn-sm">Ver Estados</a>
+            }
+            else if (esUsuarioRegular)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-basket3 text-secondary mb-3"></i>
+                        <h5>Productos</h5>
+                        <p class="text-muted">Consulta catálogo de productos</p>
+                        <a href="/productos" class="btn btn-outline-secondary btn-sm">Ver productos</a>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <i class="bi bi-file-earmark-text-fill text-dark mb-3"></i>
-                    <h5>Entregables</h5>
-                    <p class="text-muted">Revisa y configura tus entregables</p>
-                    <a href="/Entregables" class="btn btn-outline-info btn-sm">Ver Entregables</a>
+            }
+
+            <!-- Admin y Técnico pueden gestionar variables estratégicas -->
+            @if (esAdmin || esTecnico)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-graph-up text-info mb-3"></i>
+                        <h5>Variables</h5>
+                        <p class="text-muted">Configura variables estratégicas</p>
+                        <a href="/variables-estrategicas" class="btn btn-outline-info btn-sm">Gestionar variables</a>
+                    </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="feature-card">
-                    <i class="bi bi-person-badge-fill text-success mb-3"></i>
-                    <h5>Tipos de Responsables</h5>
-                    <p class="text-muted">Administra los tipos de responsable</p>
-                    <a href="/tipos-responsable" class="btn btn-outline-info btn-sm">Ver T. Responsables</a>
+            }
+            else if (esUsuarioRegular)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-graph-up text-secondary mb-3"></i>
+                        <h5>Variables</h5>
+                        <p class="text-muted">Consulta variables estratégicas</p>
+                        <a href="/variables-estrategicas" class="btn btn-outline-secondary btn-sm">Ver variables</a>
+                    </div>
                 </div>
-            </div>
-             <div class="col-md-4">
-                <div class="feature-card">
-                    <i class="bi bi-box-fill text-secondary mb-3"></i>
-                    <h5>Tipo de Proyecto</h5>
-                    <p class="text-muted">Administra los tipos de proyectos</p>
-                    <a href="/tipos-proyecto" class="btn btn-outline-info btn-sm">Ver T. Proyecto</a>
+            }
+
+            <!-- Solo Admin puede gestionar estados -->
+            @if (esAdmin)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-circle-fill text-info mb-3"></i>
+                        <h5>Estados</h5>
+                        <p class="text-muted">Revisa los estados y configúralos</p>
+                        <a href="/Estados" class="btn btn-outline-info btn-sm">Gestionar Estados</a>
+                    </div>
                 </div>
-            </div>
+            }
+            else if (esTecnico || esUsuarioRegular)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-circle text-secondary mb-3"></i>
+                        <h5>Estados</h5>
+                        <p class="text-muted">Consulta estados del sistema</p>
+                        <a href="/Estados" class="btn btn-outline-secondary btn-sm">Ver Estados</a>
+                    </div>
+                </div>
+            }
+
+            <!-- Admin y Técnico pueden gestionar entregables -->
+            @if (esAdmin || esTecnico)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-file-earmark-text-fill text-dark mb-3"></i>
+                        <h5>Entregables</h5>
+                        <p class="text-muted">Revisa y configura tus entregables</p>
+                        <a href="/Entregables" class="btn btn-outline-info btn-sm">Gestionar Entregables</a>
+                    </div>
+                </div>
+            }
+            else if (esUsuarioRegular)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-file-earmark-text text-secondary mb-3"></i>
+                        <h5>Entregables</h5>
+                        <p class="text-muted">Consulta entregables</p>
+                        <a href="/Entregables" class="btn btn-outline-secondary btn-sm">Ver Entregables</a>
+                    </div>
+                </div>
+            }
+
+            <!-- Solo Admin puede gestionar tipos de responsables -->
+            @if (esAdmin)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-person-badge-fill text-success mb-3"></i>
+                        <h5>Tipos de Responsables</h5>
+                        <p class="text-muted">Administra los tipos de responsable</p>
+                        <a href="/tipos-responsable" class="btn btn-outline-info btn-sm">Gestionar T. Responsables</a>
+                    </div>
+                </div>
+            }
+            else if (esTecnico || esUsuarioRegular)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-person-badge text-secondary mb-3"></i>
+                        <h5>Tipos de Responsables</h5>
+                        <p class="text-muted">Consulta tipos de responsable</p>
+                        <a href="/tipos-responsable" class="btn btn-outline-secondary btn-sm">Ver T. Responsables</a>
+                    </div>
+                </div>
+            }
+
+            <!-- Solo Admin puede gestionar tipos de proyecto -->
+            @if (esAdmin)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-box-fill text-secondary mb-3"></i>
+                        <h5>Tipo de Proyecto</h5>
+                        <p class="text-muted">Administra los tipos de proyectos</p>
+                        <a href="/tipos-proyecto" class="btn btn-outline-info btn-sm">Gestionar T. Proyecto</a>
+                    </div>
+                </div>
+            }
+            else if (esTecnico || esUsuarioRegular)
+            {
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <i class="bi bi-box text-secondary mb-3"></i>
+                        <h5>Tipo de Proyecto</h5>
+                        <p class="text-muted">Consulta tipos de proyectos</p>
+                        <a href="/tipos-proyecto" class="btn btn-outline-secondary btn-sm">Ver T. Proyecto</a>
+                    </div>
+                </div>
+            }
         </div>
     </div>
 </div>
 
+
+@code {
+
+    private string mensaje = "";
+    private string claseAviso = "alert alert-info";
+    private string urlBaseApi = "/"; // Replace with your actual API URL
+
+    private async Task ProbarConexion()
+    {
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var respuesta = await http.GetAsync(urlBaseApi);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Conexión exitosa con la API.";
+                claseAviso = "alert alert-success";
+            }
+            else
+            {
+                mensaje = $"Error de conexión: {respuesta.StatusCode}";
+                claseAviso = "alert alert-warning";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error de conexión: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+}
 
 <style>
     .home-container {

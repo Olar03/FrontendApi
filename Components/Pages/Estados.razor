@@ -19,7 +19,7 @@
 <div class="container items-center">
     <div class="welcome-card">
         <h5 class="display-4 text-primary mb-4">
-        <i class="bi bi-circle-fill"></i>
+            <i class="bi bi-circle-fill"></i>
             Gestión de Estados
         </h5>
 
@@ -161,6 +161,7 @@
     protected override async Task OnInitializedAsync()
     {
         await CargarEstados();
+        LimpiarMensajes();
     }
 
     // ==========================================
@@ -464,39 +465,3 @@
         LimpiarMensajes();
     }
 }
-
-<style>
-.table-blue {
-  background: #f8fbff;
-}
-
-.table-blue th {
-  background: linear-gradient(90deg, #007bff, #00bfff);
-  color: #fff;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  border-bottom: 2px solid #1260a8;
-}
-
-.table-blue tbody tr {
-  background-color: #fff;
-}
-
-.table-blue tbody tr:nth-child(even) {
-  background-color: #e8f1fb;
-}
-
-.table-blue tbody tr:hover {
-  background-color: #d3e4fa;
-}
-
-.table-blue td, .table-blue th {
-  border-color: #d0e3fa !important;
-}
-
-.table-blue td {
-  color: #19507e;
-}
-</style>
-
-

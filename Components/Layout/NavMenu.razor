@@ -1,63 +1,234 @@
-﻿
+﻿@using FrontendBlazorApi.Services
+@inject AuthService authService
+@inject NavigationManager navegacion
 
-
-<nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(90deg, #007bff, #00bfff);">
-    <div class="container">
-        <a class="navbar-brand d-flex align-items-center" href="">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(90deg, #007bff, #00bfff);"
+    @onafterrender="VerificarAutenticacion">>
+    <div class="container items-center">
+        <a class="navbar-brand d-flex align-items-center" href="dashboard">
             <i class="bi bi-house-door-fill me-2"></i>
             <span>Proyecto Api</span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
             <ul class="navbar-nav">
+                <!-- Dashboard -->
                 <li class="nav-item">
-                    <NavLink class="nav-link align-items-center" href="" Match="NavLinkMatch.All">
-                        <span>Home</span>
+                    <NavLink class="nav-link align-items-center" href="dashboard" Match="NavLinkMatch.All">
+                        <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
                     </NavLink>
                 </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link align-items-center" href="usuarios">
-                        <span>Usuarios</span>
-                    </NavLink>
+
+                <!-- Menú desplegable: Administración -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle align-items-center" href="#" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-gear-fill"></i> Administración
+                    </a>
+                    <ul class="dropdown-menu background-light">
+                        <li>
+                            <NavLink class="dropdown-item" href="usuarios">
+                                <i class="bi bi-person-fill"></i> Usuarios
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="tipos-responsable">
+                                <i class="bi bi-person-badge-fill"></i> T. Responsables
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="responsables">
+                                <i class="bi bi-person-badge"></i> Responsables
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="estados">
+                                <i class="bi bi-circle-fill"></i> Estados
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="archivos">
+                                <i class="bi bi-envelope-paper-fill"></i> Archivos
+                            </NavLink>
+                        </li>
+                    </ul>
                 </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link align-items-center" href="tipos-responsable">
-                        <span>Responsables</span>
-                    </NavLink>
+
+                <!-- Menú desplegable: Proyectos -->
+                <li class="nav-item dropdown ">
+                    <a class="nav-link dropdown-toggle align-items-center" href="#" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-kanban-fill"></i> Proyectos
+                    </a>
+                    <ul class="dropdown-menu background-light">
+                        <li>
+                            <NavLink class="dropdown-item" href="proyectos">
+                                <i class="bi bi-folder"></i> Proyectos
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="actividades">
+                                <i class="bi bi-check2-square"></i> Actividades
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="presupuestos">
+                                <i class="bi bi-currency-dollar"></i> Presupuestos
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="distribucion-presupuestos">
+                                <i class="bi bi-pie-chart-fill"></i> Distribución
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="ejecucion-presupuestos">
+                                <i class="bi bi-graph-up"></i> Ejecución
+                            </NavLink>
+                        </li>
+                    </ul>
                 </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link align-items-center" href="estados">
-                        <span>Estados</span>
-                    </NavLink>
+
+                <!-- Menú desplegable: Catálogos -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle align-items-center" href="#" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-folder-fill"></i> Catálogos
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-light">
+                        <li>
+                            <NavLink class="dropdown-item" href="tipos-producto">
+                                <i class="bi bi-box-seam"></i> T.Producto
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="tipos-proyecto">
+                                <i class="bi bi-folder-fill"></i> T.Proyecto
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="entregables">
+                                <i class="bi bi-file-earmark-text-fill"></i> Entregables
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="productos">
+                                <i class="bi bi-box-fill"></i> Productos
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="productos-entregables">
+                                <i class="bi bi-diagram-3"></i> Productos-Entregables
+                            </NavLink>
+                        </li>
+                    </ul>
                 </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link align-items-center" href="tipos-producto">
-                        <span>T.Producto</span>
-                    </NavLink>
+
+                <!-- Menú desplegable: Estrategia -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle align-items-center" href="#" role="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-bullseye"></i> Estrategia
+                    </a>
+                    <ul class="dropdown-menu background-light">
+                        <li>
+                            <NavLink class="dropdown-item" href="variables-estrategicas">
+                                <i class="bi bi-graph-up-arrow"></i> Variables
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="objetivos-estrategicos">
+                                <i class="bi bi-bullseye"></i> Objetivos
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink class="dropdown-item" href="metas-estrategicas">
+                                <i class="bi bi-flag-fill"></i> Metas
+                            </NavLink>
+                        </li>
+                    </ul>
                 </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link align-items-center" href="tipos-proyecto">
-                        <span>T.Proyecto</span>
-                    </NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link align-items-center" href="entregables">
-                        <span>Entregables</span>
-                    </NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link align-items-center" href="variables-estrategicas">
-                        <span>Variables</span>
-                    </NavLink>
-                </li>
-                <li class="nav-item">
-                    <NavLink class="nav-link align-items-center" href="productos">
-                        <span>Productos</span>
-                    </NavLink>
-                </li>
+            </ul>
+
+            <!-- Área de usuario a la derecha -->
+            <ul class="navbar-nav ms-auto">
+                @if (usuarioLogueado == true)
+                {
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> @nombreUsuario
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <h6 class="dropdown-header">@nombreUsuario</h6>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider" />
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="#" @onclick="CerrarSesion" @onclick:preventDefault="true">
+                                    <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                }
+                else
+                {
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="">
+                            <i class="bi bi-box-arrow-in-right"></i> Login
+                        </NavLink>
+                    </li>
+                }
             </ul>
         </div>
     </div>
 </nav>
+
+@code {
+    private bool isDropdownOpen = false;
+    private bool usuarioLogueado = false;
+    private string nombreUsuario = "Invitado";
+
+    private void ToggleDropdown()
+    {
+        isDropdownOpen = !isDropdownOpen;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await VerificarAutenticacion();
+        }
+    }
+
+    private async Task VerificarAutenticacion()
+    {
+        try
+        {
+            usuarioLogueado = await authService.EstáAutenticado();
+            if (usuarioLogueado)
+            {
+                nombreUsuario = await authService.ObtenerUsuarioActual();
+                StateHasChanged();
+                usuarioLogueado = true;
+            }
+
+        }
+        catch
+        {
+            usuarioLogueado = false;
+            nombreUsuario = "Invitado";
+        }
+    }
+
+    private async Task CerrarSesion()
+    {
+        await authService.CerrarSesion();
+        navegacion.NavigateTo("/", true);
+    }
+}

@@ -34,7 +34,7 @@ C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\ref\FrontendBlazorApi
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\bin\Debug\net9.0\BootstrapIcons.AspNetCore.dll
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\FrontendBlazorApi.csproj.AssemblyReference.cache
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\Frontend.1D59CE2F.Up2Date
-C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\p9qfri4flf-3f36p8i1qj.gz
-C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\oj55z46223-3f36p8i1qj.gz
 C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\FrontendBlazorApi.sourcelink.json
-C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\hejoe847o0-37vib23wsy.gz
+C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\p9qfri4flf-8mn8vs5acz.gz
+C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\oj55z46223-8mn8vs5acz.gz
+C:\2025\PROYECTOS_FRONT\FrontendBlazorApi\obj\Debug\net9.0\compressed\hejoe847o0-h9t0h0ikt9.gz

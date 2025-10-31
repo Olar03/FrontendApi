@@ -1,25 +1,57 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace FrontendBlazorApi.Models
 {
-    // Modelo que representa un producto tal como lo devuelve y recibe la API
     public class Producto
     {
-        [JsonPropertyName("codigo")]
-        public string Codigo { get; set; } = string.Empty;
+        [JsonPropertyName("Id")]
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int Id { get; set; }
 
-        [JsonPropertyName("nombre")]
-        public string Nombre { get; set; } = string.Empty;
+        [JsonPropertyName("IdTipoProducto")]
+        [Required]
+        public int IdTipoProducto { get; set; }
 
-        [JsonPropertyName("stock")]
-        public int Stock { get; set; }
+        [MaxLength(50)]
+        [JsonPropertyName("Codigo")]
+        public string? Codigo { get; set; }
 
-        [JsonPropertyName("valorunitario")]   // Ojo: coincide con el JSON de la API
-        public double ValorUnitario { get; set; }
+        [JsonPropertyName("Titulo")]
+        [Required]
+        [MaxLength(255)]
+        public string Titulo { get; set; } = string.Empty;
+
+        [JsonPropertyName("Descripcion")]
+        public string? Descripcion { get; set; }
+
+       [JsonPropertyName("FechaInicio")]
+        public DateTime? FechaInicio { get; set; }
+
+        [JsonPropertyName("FechaFinPrevista")]
+        public DateTime? FechaFinPrevista { get; set; }
+
+        [JsonPropertyName("FechaModificacion")]
+        public DateTime? FechaModificacion { get; set; }
+
+        [JsonPropertyName("FechaFinalizacion")]
+        public DateTime? FechaFinalizacion { get; set; }
+
+        [JsonPropertyName("RutaLogo")]
+        public string? RutaLogo { get; set; }
+
+        // Navegación
+        [ForeignKey("IdTipoProducto")]
+        public TipoProducto? TipoProducto { get; set; }
+
+        public ICollection<Proyecto_Producto>? ProyectoProductos { get; set; }
+        public ICollection<Producto_Entregable>? ProductoEntregables { get; set; }
     }
-
 }
 
 
-    // Clase genérica para mapear la respuesta de la API
+
+
     

@@ -1,0 +1,555 @@
+@*  
+- @page "/presupuestos"
+- Autor: Victor Oliveros
+- Fecha: 10/2025
+- Version: 1.0
+- Descripción: Página para gestionar presupuestos vinculados a proyectos.
+- Notas: Basada en la estructura de Archivos.razor
+
+Documentación: Permite gestionar presupuestos con montos, estados y fechas.
+*@
+
+@page "/presupuestos"
+
+@using System.Net.Http.Json
+@using FrontendBlazorApi.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Linq
+
+@inject IHttpClientFactory fabricaHttp
+@rendermode InteractiveServer
+
+<PageTitle>Gestión de Presupuestos</PageTitle>
+
+<div class="container items-center">
+    <div class="welcome-card">
+        <h5 class="display-4 text-primary mb-4">
+            <i class="bi bi-currency-dollar me-2"></i>
+            Gestión de Presupuestos
+        </h5>
+
+        <div class="mb-3 d-flex gap-2 items-center">
+            <button type="button" class="btn btn-outline-primary" @onclick="CargarPresupuestos">
+                <i class="bi bi-eye" aria-hidden="true"></i> Mostrar todos
+            </button>
+            <button type="button" class="btn btn-outline-success" @onclick="CargarProyectos">
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Cargar Proyectos
+            </button>
+            <button type="button" class="btn btn-outline-dark" @onclick="LimpiarFormulario">
+                <i class="bi bi-eraser" aria-hidden="true"></i> Limpiar
+            </button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(mensaje))
+        {
+            <div class="@claseAviso" role="alert">@mensaje</div>
+        }
+
+        <h4>Formulario de Presupuesto</h4>
+        <EditForm Model="@presupuestoActual" OnValidSubmit="GuardarSegunEstado" FormName="PresupuestoForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">ID</label>
+                    <InputNumber class="form-control" @bind-Value="presupuestoActual.Id" />
+                    <div class="form-text">Solo para búsqueda</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Proyecto *</label>
+                    <InputSelect class="form-control" @bind-Value="presupuestoActual.IdProyecto">
+                        <option value="0">-- Seleccione un proyecto --</option>
+                        @foreach (var proyecto in listaProyectos)
+                        {
+                            <option value="@proyecto.Id">@proyecto.Titulo</option>
+                        }
+                    </InputSelect>
+                    <div class="form-text">Proyecto asociado</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Monto Solicitado *</label>
+                    <InputNumber class="form-control" @bind-Value="presupuestoActual.MontoSolicitado" TValue="decimal"
+                        step="0.01" />
+                    <div class="form-text">Monto en moneda local</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Estado</label>
+                    <InputSelect class="form-control" @bind-Value="presupuestoActual.Estado">
+                        <option value="Pendiente">Pendiente</option>
+                        <option value="En Revisión">En Revisión</option>
+                        <option value="Aprobado">Aprobado</option>
+                        <option value="Rechazado">Rechazado</option>
+                        <option value="Modificado">Modificado</option>
+                    </InputSelect>
+                    <div class="form-text">Estado actual del presupuesto</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Monto Aprobado</label>
+                    <InputNumber class="form-control" @bind-Value="presupuestoActual.MontoAprobado" TValue="decimal?"
+                        step="0.01" />
+                    <div class="form-text">Monto finalmente aprobado</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Período Año</label>
+                    <InputNumber class="form-control" @bind-Value="presupuestoActual.PeriodoAnio" />
+                    <div class="form-text">Año del presupuesto</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Solicitud</label>
+                    <InputDate class="form-control" @bind-Value="presupuestoActual.FechaSolicitud" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Fecha Aprobación</label>
+                    <InputDate class="form-control" @bind-Value="presupuestoActual.FechaAprobacion" />
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Observaciones</label>
+                    <InputTextArea class="form-control" rows="3" @bind-Value="presupuestoActual.Observaciones" />
+                    <div class="form-text">Comentarios y observaciones del presupuesto</div>
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-circle" aria-hidden="true"></i> @textoBotonGuardar
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="BuscarPorID">
+                    <i class="bi bi-search" aria-hidden="true"></i> Buscar
+                </button>
+                <button type="button" class="btn btn-warning" @onclick="ActualizarPresupuesto"
+                    disabled="@(!existePresupuesto)">
+                    <i class="bi bi-pencil-square" aria-hidden="true"></i> Actualizar
+                </button>
+                <button type="button" class="btn btn-danger" @onclick="EliminarPresupuesto"
+                    disabled="@(!existePresupuesto)">
+                    <i class="bi bi-trash" aria-hidden="true"></i> Eliminar
+                </button>
+            </div>
+        </EditForm>
+        <hr />
+
+        @if (cargando)
+        {
+            <p>Cargando presupuestos...</p>
+        }
+        else if (listaPresupuestos.Count == 0)
+        {
+            <p>No hay presupuestos disponibles.</p>
+        }
+        else
+        {
+            <h4 class="mt-4">Lista de Presupuestos</h4>
+            <table class="table table-striped table-blue">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Proyecto</th>
+                        <th>Monto Solicitado</th>
+                        <th>Monto Aprobado</th>
+                        <th>Estado</th>
+                        <th>Año</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var presupuesto in listaPresupuestos)
+                    {
+                        <tr>
+                            <td>@presupuesto.Id</td>
+                            <td>
+                                @{
+                                    var proyectoRelacionado = listaProyectos
+                                    .FirstOrDefault(p => p.Id == presupuesto.IdProyecto);
+                                }
+                                @(proyectoRelacionado?.Titulo ?? $"Proyecto ID: {presupuesto.IdProyecto}")
+                            </td>
+                            <td>@presupuesto.MontoSolicitado.ToString("C")</td>
+                            <td>
+                                @if (presupuesto.MontoAprobado.HasValue)
+                                {
+                                    @presupuesto.MontoAprobado.Value.ToString("C")
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Pendiente</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge @GetEstadoBadgeClass(presupuesto.Estado)">
+                                    @presupuesto.Estado
+                                </span>
+                            </td>
+                            <td>@presupuesto.PeriodoAnio</td>
+                            <td>
+                                <button class="btn btn-sm btn-info" @onclick="() => CargarEnFormulario(presupuesto)">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i> Editar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            @* Resumen de presupuestos *@
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <h5>Resumen Financiero</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h6>Total Solicitado</h6>
+                                    <h4>@listaPresupuestos.Sum(p => p.MontoSolicitado).ToString("C")</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h6>Total Aprobado</h6>
+                                    <h4>@listaPresupuestos.Sum(p => p.MontoAprobado ?? 0).ToString("C")</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <h6>Pendientes</h6>
+                                    <h4>@listaPresupuestos.Count(p => p.Estado == "Pendiente")</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h6>Aprobados</h6>
+                                    <h4>@listaPresupuestos.Count(p => p.Estado == "Aprobado")</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Presupuesto> listaPresupuestos = new();
+    private List<Proyecto> listaProyectos = new();
+
+    [SupplyParameterFromForm]
+    private Presupuesto presupuestoActual { get; set; } = new();
+
+    private bool existePresupuesto = false;
+    private bool cargando = false;
+    private string mensaje = "";
+    private string claseAviso = "alert alert-info";
+    private string textoBotonGuardar = "Crear Presupuesto";
+
+    private const string urlBaseApiPresupuestos = "api/presupuesto";
+    private const string urlBaseApiProyectos = "api/proyecto";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarProyectos();
+        await CargarPresupuestos();
+        LimpiarMensajes();
+    }
+
+    private async Task CargarPresupuestos()
+    {
+        LimpiarMensajes();
+        try
+        {
+            cargando = true;
+            using var httpClient = fabricaHttp.CreateClient("ApiProyecto");
+            var respuesta = await httpClient.GetFromJsonAsync<RespuestaApi<List<Presupuesto>>>(urlBaseApiPresupuestos);
+
+            listaPresupuestos = respuesta?.Datos ?? new List<Presupuesto>();
+            mensaje = $"Se cargaron {listaPresupuestos.Count} presupuestos.";
+            claseAviso = "alert alert-success";
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al cargar presupuestos: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task CargarProyectos()
+    {
+        try
+        {
+            using var httpClient = fabricaHttp.CreateClient("ApiProyecto");
+            var respuesta = await httpClient.GetFromJsonAsync<RespuestaApi<List<Proyecto>>>(urlBaseApiProyectos);
+            listaProyectos = respuesta?.Datos ?? new List<Proyecto>();
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al cargar proyectos: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    private async Task BuscarPorID()
+    {
+        LimpiarMensajes();
+        if (presupuestoActual.Id <= 0)
+        {
+            mensaje = "Por favor ingrese un ID válido para buscar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            using var httpClient = fabricaHttp.CreateClient("ApiProyecto");
+            var url = $"{urlBaseApiPresupuestos}/id/{presupuestoActual.Id}";
+            var respuesta = await httpClient.GetFromJsonAsync<RespuestaApi<List<Presupuesto>>>(url);
+            var encontrado = respuesta?.Datos?.FirstOrDefault();
+
+            if (encontrado != null)
+            {
+                presupuestoActual = new Presupuesto()
+                {
+                    Id = encontrado.Id,
+                    IdProyecto = encontrado.IdProyecto,
+                    MontoSolicitado = encontrado.MontoSolicitado,
+                    Estado = encontrado.Estado,
+                    MontoAprobado = encontrado.MontoAprobado,
+                    PeriodoAnio = encontrado.PeriodoAnio,
+                    FechaSolicitud = encontrado.FechaSolicitud,
+                    FechaAprobacion = encontrado.FechaAprobacion,
+                    Observaciones = encontrado.Observaciones
+                };
+
+                existePresupuesto = true;
+                textoBotonGuardar = "Actualizar";
+                mensaje = "Presupuesto encontrado y cargado en el formulario.";
+                claseAviso = "alert alert-success";
+            }
+            else
+            {
+                mensaje = "Presupuesto no encontrado.";
+                claseAviso = "alert alert-warning";
+                existePresupuesto = false;
+                textoBotonGuardar = "Crear";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al buscar presupuesto: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    private async Task GuardarSegunEstado()
+    {
+        LimpiarMensajes();
+
+        if (presupuestoActual.IdProyecto <= 0)
+        {
+            mensaje = "Debe seleccionar un proyecto.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        if (presupuestoActual.MontoSolicitado <= 0)
+        {
+            mensaje = "El monto solicitado debe ser mayor a cero.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        if (existePresupuesto)
+        {
+            await ActualizarPresupuesto();
+        }
+        else
+        {
+            await CrearPresupuesto();
+        }
+    }
+
+    private async Task CrearPresupuesto()
+    {
+        try
+        {
+            using var httpClient = fabricaHttp.CreateClient("ApiProyecto");
+
+            var presupuestoParaCrear = new
+            {
+                IdProyecto = presupuestoActual.IdProyecto,
+                MontoSolicitado = presupuestoActual.MontoSolicitado,
+                Estado = presupuestoActual.Estado,
+                MontoAprobado = presupuestoActual.MontoAprobado,
+                PeriodoAnio = presupuestoActual.PeriodoAnio,
+                FechaSolicitud = presupuestoActual.FechaSolicitud,
+                FechaAprobacion = presupuestoActual.FechaAprobacion,
+                Observaciones = presupuestoActual.Observaciones
+            };
+
+            var respuesta = await httpClient.PostAsJsonAsync(urlBaseApiPresupuestos, presupuestoParaCrear);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Presupuesto creado correctamente.";
+                claseAviso = "alert alert-success";
+                await CargarPresupuestos();
+                LimpiarFormulario();
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"Error al crear presupuesto: {respuesta.ReasonPhrase}. Detalle: {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al crear presupuesto: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    private async Task ActualizarPresupuesto()
+    {
+        try
+        {
+            using var httpClient = fabricaHttp.CreateClient("ApiProyecto");
+
+            var presupuestoParaActualizar = new
+            {
+                IdProyecto = presupuestoActual.IdProyecto,
+                MontoSolicitado = presupuestoActual.MontoSolicitado,
+                Estado = presupuestoActual.Estado,
+                MontoAprobado = presupuestoActual.MontoAprobado,
+                PeriodoAnio = presupuestoActual.PeriodoAnio,
+                FechaSolicitud = presupuestoActual.FechaSolicitud,
+                FechaAprobacion = presupuestoActual.FechaAprobacion,
+                Observaciones = presupuestoActual.Observaciones
+            };
+
+            var respuesta = await httpClient.PutAsJsonAsync($"{urlBaseApiPresupuestos}/{presupuestoActual.Id}",
+            presupuestoParaActualizar);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Presupuesto actualizado correctamente.";
+                claseAviso = "alert alert-success";
+                await CargarPresupuestos();
+                LimpiarFormulario();
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"Error al actualizar presupuesto: {respuesta.ReasonPhrase}. Detalle: {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al actualizar presupuesto: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    private async Task EliminarPresupuesto()
+    {
+        if (presupuestoActual.Id <= 0)
+        {
+            mensaje = "ID de presupuesto inválido para eliminar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            using var httpClient = fabricaHttp.CreateClient("ApiProyecto");
+            var url = $"{urlBaseApiPresupuestos}/id/{presupuestoActual.Id}";
+            var respuesta = await httpClient.DeleteAsync(url);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Presupuesto eliminado correctamente.";
+                claseAviso = "alert alert-success";
+                await CargarPresupuestos();
+                LimpiarFormulario();
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"Error al eliminar presupuesto: {respuesta.ReasonPhrase}. Detalle: {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al eliminar presupuesto: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    private void CargarEnFormulario(Presupuesto presupuesto)
+    {
+        presupuestoActual = new Presupuesto
+        {
+            Id = presupuesto.Id,
+            IdProyecto = presupuesto.IdProyecto,
+            MontoSolicitado = presupuesto.MontoSolicitado,
+            Estado = presupuesto.Estado,
+            MontoAprobado = presupuesto.MontoAprobado,
+            PeriodoAnio = presupuesto.PeriodoAnio,
+            FechaSolicitud = presupuesto.FechaSolicitud,
+            FechaAprobacion = presupuesto.FechaAprobacion,
+            Observaciones = presupuesto.Observaciones
+        };
+
+        existePresupuesto = true;
+        textoBotonGuardar = "Actualizar";
+        mensaje = "Presupuesto cargado en formulario.";
+        claseAviso = "alert alert-info";
+    }
+
+    private void LimpiarMensajes()
+    {
+        mensaje = "";
+        claseAviso = "";
+    }
+
+    private void LimpiarFormulario()
+    {
+        presupuestoActual = new Presupuesto();
+        existePresupuesto = false;
+        textoBotonGuardar = "Crear Presupuesto";
+        LimpiarMensajes();
+    }
+
+    private string GetEstadoBadgeClass(string estado)
+    {
+        return estado switch
+        {
+            "Pendiente" => "bg-warning",
+            "En Revisión" => "bg-info",
+            "Aprobado" => "bg-success",
+            "Rechazado" => "bg-danger",
+            "Modificado" => "bg-secondary",
+            _ => "bg-dark"
+        };
+    }
+}
+

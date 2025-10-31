@@ -1,0 +1,681 @@
+@*
+    -Vista de Metas Estratégicas
+    -Autor: Victor Oliveros
+    -Fecha: 10/2025
+    -Version: 1.0
+    -Descripcion: Vista para gestionar las metas estratégicas asociadas a los objetivos estratégicos.
+    -Notas: Basada en la estructura de ObjetivosEstrategicos.razor
+
+    Documentación: 
+    Esta página permite gestionar las metas estratégicas, que están vinculadas a los objetivos estratégicos.
+    Asegúrate de que los objetivos estratégicos existen antes de asignarles metas.
+
+*@
+
+@page "/metas-estrategicas"
+
+@using System.Net.Http.Json
+@using FrontendBlazorApi.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Linq
+
+@inject IHttpClientFactory fabricaHttp
+@rendermode InteractiveServer
+
+<PageTitle>Metas Estratégicas</PageTitle>
+
+<div class="container items-center">
+    <div class="welcome-card">
+        <h5 class="display-4 text-primary mb-4">
+            <i class="bi bi-flag-fill me-2"></i>
+            Gestion de Metas Estratégicas
+        </h5>
+
+        @* 
+        EXPLICACIÓN: Barra de acciones principales
+        Esta sección proporciona botones para las operaciones más comunes que el usuario realizará
+        *@
+        <div class="mb-3 d-flex gap-2 items-center">            
+            <button type="button" class="btn btn-outline-primary" @onclick="CargarMetasEstrategicas">
+                <i class="bi bi-eye" aria-hidden="true"></i> Mostrar todos
+            </button>
+            <button type="button" class="btn btn-outline-success" @onclick="CargarObjetivosEstrategicos">
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Cargar Objetivos
+            </button>
+            <button type="button" class="btn btn-outline-dark" @onclick="LimpiarFormulario">
+                <i class="bi bi-eraser" aria-hidden="true"></i> Limpiar
+            </button>
+        </div>
+
+        @*  
+        EXPLICACIÓN: Área de mensajes
+        Esta div muestra mensajes de retroalimentación al usuario (éxito, error, advertencia)
+        La clase CSS se asigna dinámicamente según el tipo de mensaje
+        *@
+        @if (!string.IsNullOrWhiteSpace(mensaje))
+        {
+            <div class="@claseAviso" role="alert">@mensaje</div>
+        }
+
+        @* 
+       @* 
+        EXPLICACIÓN: Formulario principal
+        EditForm es un componente de Blazor que proporciona validación automática
+        y manejo de envío de formularios. El atributo Model vincula el formulario
+        a nuestro objeto 'metaEstrategicaActual'.
+        *@
+        <h4>Formulario Meta Estratégica</h4>
+
+        <EditForm Model="metaEstrategicaActual" OnValidSubmit="GuardarSegunEstado"
+            FormName="MetaEstrategicaForm">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="row g-3">
+                @* 
+                EXPLICACIÓN: Campo ID - Solo lectura para búsqueda
+                Este campo permite al usuario ingresar un ID para buscar una meta estrategica existente
+                No se usa para crear nuevos registros (autoincrement)
+                *@
+                <div class="col-md-2">
+                    <label class="form-label">ID</label>
+                    <InputNumber class="form-control" @bind-Value="metaEstrategicaActual.Id" />
+                    <div class="form-text">Solo para búsqueda</div>
+                </div>
+
+                @* 
+                EXPLICACIÓN: Campo de Clave Foránea - CONCEPTO IMPORTANTE
+                Este es un InputSelect que permite al usuario elegir una Variable Estratégica existente.
+                La propiedad @bind-Value se vincula a IdVariable (la clave foránea).
+                Las opciones se llenan desde listaVariablesEstrategicas que cargamos de la API.
+                *@
+                <div class="col-md-3">
+                    <label class="form-label">Objetivo Estrategico *</label>
+                    <InputSelect class="form-control" @bind-Value="metaEstrategicaActual.IdObjetivo">
+                        <option value="0">-- Seleccione un Objetivo Estrategico --</option>
+                        @* 
+                        BUCLE FOREACH: Recorre cada variable estratégica disponible
+                        y crea una opción en el select con su ID como valor y su título como texto
+                        *@
+                        @foreach (var objetivo in listaObjetivosEstrategicos)
+                        {
+                            <option value="@objetivo.Id">@objetivo.Titulo</option>
+                        }
+                    </InputSelect>
+                    <div class="form-text">Requerido: Seleccione el Objetivo estratégico asociada</div>
+                </div>
+
+                @* 
+                EXPLICACIÓN: Campos de texto estándar
+                Estos campos funcionan igual que en otras páginas CRUD, 
+                vinculándose directamente a las propiedades del modelo
+                *@
+                <div class="col-md-4">
+                    <label class="form-label">Título *</label>
+                    <InputText class="form-control" @bind-Value="metaEstrategicaActual.Titulo" />
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Descripción</label>
+                    <InputText class="form-control" @bind-Value="metaEstrategicaActual.Descripcion" />
+                </div>
+            </div>
+
+            @* 
+            EXPLICACIÓN: Botones de acción del formulario
+            Cada botón tiene una función específica y algunos se deshabilitan dinámicamente
+            según el estado actual (si existe o no un objetivo cargado)
+            *@
+            <div class="mt-3 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-circle" aria-hidden="true"></i> @textoBotonGuardar
+                </button>
+                <button type="button" class="btn btn-secondary" @onclick="BuscarPorId">
+                    <i class="bi bi-search" aria-hidden="true"></i> Buscar
+                </button>
+                <button type="button" class="btn btn-warning" @onclick="ActualizarMetaEstrategica"
+                    disabled="@(!existeMetaEstrategica)">
+                    <i class="bi bi-pencil-square" aria-hidden="true"></i> Actualizar
+                </button>
+                <button type="button" class="btn btn-danger" @onclick="EliminarMetaEstrategica"
+                    disabled="@(!existeMetaEstrategica)">
+                    <i class="bi bi-trash" aria-hidden="true"></i> Eliminar
+                </button>
+            </div>
+        </EditForm>
+
+        <hr />
+        @* 
+        EXPLICACIÓN: Tabla de datos con información relacionada
+        Esta tabla muestra no solo los datos del objetivo, sino también
+        información de la Variable Estratégica relacionada (usando la navegación)
+        *@
+        @if (cargando)
+        {
+            <p><em>Cargando Metas estrategicas...</em></p>
+        }
+        else if (listaMetasEstrategicas.Count == 0)
+        {
+            <p>No hay Metas estratégicas registradas.</p>
+        }
+        else
+        {
+            <table class="table table-striped table-blue">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Objetivo estratégico</th>
+                        <th>Título</th>
+                        <th>Descripción</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @* 
+                    EXPLICACIÓN: Renderizado de datos relacionados
+                    Observa cómo accedemos a objetivo.VariableEstrategica?.Titulo
+                    Esto utiliza la propiedad de navegación para mostrar el título
+                    de la variable relacionada en lugar del ID numérico
+                    *@
+                    @foreach (var meta in listaMetasEstrategicas)
+                    {
+                        <tr>
+                            <td>@meta.Id</td>
+                            <td>
+                                @* 
+                                EXPLICACIÓN: Buscamos el título de la variable en nuestra lista cargada
+                                Si no la encontramos, mostramos el ID como fallback
+                                *@
+                                @{
+                                    var objetivoRelacionado = listaObjetivosEstrategicos
+                                        .FirstOrDefault(o => o.Id == meta.IdObjetivo);
+                                }
+                                @(objetivoRelacionado?.Titulo ?? $"Objetivo ID: {meta.IdObjetivo}")
+                            </td>
+                            <td>@meta.Titulo</td>
+                            <td>@meta.Descripcion</td>
+                            <td>
+                                <button class="btn btn-sm btn-info" @onclick="() => CargarEnFormulario(meta)">
+                                    <i class="bi bi-cloud-arrow-up" aria-hidden="true"></i> Cargar
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+
+    </div>
+</div>
+
+
+@code {
+    // ==========================================
+    // EXPLICACIÓN: VARIABLES DE ESTADO
+    // Esta sección maneja las metas estratégicas, que están vinculadas a los objetivos estratég
+    // ==========================================
+
+    /*
+    Conceptos Clave: Variables de Estado, Manejo de Claves Foráneas, CRUD, Estas variables son esenciales para el
+    funcionamiento de la página.
+    - metasEstrategicas: Lista que almacena todas las metas estratégicas obtenidas de la API.
+    - objetivosEstrategicos: Lista que almacena los objetivos estratégicos para relacionarlos con las metas.
+    - nuevaMeta: Objeto que representa la meta estratégica que se está creando o editando
+    */
+
+    //Lista principal de metas estratégicas
+    private List<MetaEstrategica> listaMetasEstrategicas = new();
+
+    //Lista de objetivos estratégicos para relacionar con las metas
+    // Esta lista se carga desde la API al inicializar la página para poblar los dropdowns
+    private List<ObjetivoEstrategico> listaObjetivosEstrategicos = new();
+
+    // Objeto vinculado al formulario para crear o editar una meta estratégica
+    // Objeto para la nueva meta estratégica o la que se está editando
+    [SupplyParameterFromForm]
+    private MetaEstrategica metaEstrategicaActual { get; set; } = new();
+
+    //Variables para controlar el estado del formulario
+    private bool existeMetaEstrategica = false; //Indica si la meta ya existe (para actualizar)
+    private string textoBotonGuardar = "Crear Meta"; //Texto del botón de guardar (crear o actualizar)
+    private string mensaje = ""; //Mensaje para mostrar el resultado de las operaciones
+    private string claseAviso = "alert alert-info"; //Clase CSS para el mensaje
+    private bool cargando = false; //Indica si se está cargando datos
+
+    //Constantes para las URLs de la API
+    private const string urlBaseApiMetas = "api/metaestrategica";
+    private const string urlBaseApiObjetivos = "api/objetivoestrategico";
+
+    // ==========================================
+    // EXPLICACIÓN: MÉTODOS DE CICLO DE VIDA
+    // Estos métodos se ejecutan en diferentes etapas del ciclo de vida del componente
+    // ==========================================
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Importante: Cargar los objetivos estratégicos primero para que estén disponibles
+        // - Cargar las metas y crear o editar(Dropdowns)
+        await CargarObjetivosEstrategicos();
+        await CargarMetasEstrategicas();
+        LimpiarMensajes();
+    }
+
+    //=========================================
+    // EXPLICACIÓN: MÉTODOS CRUD PRONCIPALES
+    // Estos métodos realizan tareas específicas como cargar datos, manejar formularios, etc.
+    // ==========================================
+
+
+    /// <summary>
+    /// Metodo: CargarObjetivosEstrategicos
+    /// Descripción: Carga la lista de objetivos estratégicos desde la API.
+    /// Importante para relacionar metas con objetivos.
+    /// HTTP GET /api/objetivosestrategicos
+    /// </summary>
+
+    private async Task CargarObjetivosEstrategicos()
+        {
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var respuesta = await http.GetFromJsonAsync<RespuestaApi<List<ObjetivoEstrategico>>>(urlBaseApiObjetivos);
+
+            // PATRÓN NULL-COALESCING: Si respuesta?.Datos es null, usa lista vacía
+            listaObjetivosEstrategicos = respuesta?.Datos ?? new List<ObjetivoEstrategico>();
+
+            // LOGGING/FEEDBACK: Informamos al usuario sobre la operación
+            mensaje = $"Se cargaron {listaObjetivosEstrategicos.Count} objetivos estratégicos para selección.";
+            claseAviso = "alert alert-info";
+        }
+        catch (Exception error)
+        {
+            // MANEJO DE ERRORES: Siempre capturamos excepciones y las mostramos al usuario
+            mensaje = $"Error al cargar los objetivos estratégicos: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// Metodo: CargarMetasEstrategicas
+    /// Descripción: Carga la lista de metas estratégicas desde la API.
+    /// HTTP GET /api/metasestrategicas
+    /// </summary>
+    private async Task CargarMetasEstrategicas()
+    {
+
+        try
+        {
+            cargando = true; // Indicamos que estamos cargando datos
+
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            // Realizamos la llamada GET a la API
+            var respuesta = await http.GetFromJsonAsync<RespuestaApi<List<MetaEstrategica>>>(urlBaseApiMetas);
+
+            // PATRÓN NULL-COALESCING: Si respuesta?.Datos es null, usa lista vacía
+            listaMetasEstrategicas = respuesta?.Datos ?? new List<MetaEstrategica>();
+
+            // LOGGING/FEEDBACK: Informamos al usuario sobre la operación
+            mensaje = $"Se cargaron {listaMetasEstrategicas.Count} metas estratégicas.";
+            claseAviso = "alert alert-info";
+        }
+        catch (Exception error)
+        {
+            // MANEJO DE ERRORES: Siempre capturamos excepciones y las mostramos al usuario
+            mensaje = $"Error al cargar las metas estratégicas: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+        finally
+        {
+            cargando = false; // Terminamos de cargar datos
+        }
+    }
+
+
+    /// <Summary>
+    /// METODO: Busca una meta estratégica por su ID y la carga en el formulario
+    /// PROPÓSITO: Permite al usuario editar una meta existente
+    /// </Summary>
+    private async Task BuscarPorId()
+    {
+        LimpiarMensajes();
+
+        if (metaEstrategicaActual.Id <= 0)
+        {
+            mensaje = "Por favor, ingrese un ID válido para buscar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var url = $"{urlBaseApiMetas}/id/{metaEstrategicaActual.Id}";
+            var respuesta = await http.GetFromJsonAsync<RespuestaApi<List<MetaEstrategica>>>(url);
+            var encontrada = respuesta?.Datos?.FirstOrDefault();
+
+            if (encontrada != null)
+            {
+                /*
+                Creación de nueva instancia para evitar efectos secundarios
+                al modificar el objeto directamente desde la lista
+                */
+
+                metaEstrategicaActual = new MetaEstrategica()
+                {
+                    Id = encontrada.Id,
+                    IdObjetivo = encontrada.IdObjetivo, // Clave foránea
+                    Titulo = encontrada.Titulo,
+                    Descripcion = encontrada.Descripcion
+                };
+
+                // Actualizamos el estado del formulario
+                existeMetaEstrategica = true;
+                textoBotonGuardar = "Actualizar Meta";
+                mensaje = "Meta estratégica cargada para edición.";
+                claseAviso = "alert alert-info";
+
+            }
+            else
+            {
+                mensaje = "No se encontró ninguna meta estratégica con ese ID.";
+                claseAviso = "alert alert-warning";
+                existeMetaEstrategica = false;
+                textoBotonGuardar = "Crear";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al buscar la meta estratégica: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+
+    }
+
+
+
+    /// <summary>
+    /// MÉTODO: Guarda la meta estratégica actual, creando o actualizando según el estado
+    /// PROPÓSITO: Simplifica la lógica del formulario en un solo punto
+    /// </summary>
+
+    private async Task GuardarSegunEstado()
+    {
+        //Validación básica de clave foránea
+        if (metaEstrategicaActual.IdObjetivo <= 0)
+        {
+            mensaje = "Debe seleccionar un objetivo estratégico válido.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        // Logica para crear o actualizar
+        if (existeMetaEstrategica)
+        {
+            await ActualizarMetaEstrategica();
+        }
+        else
+        {
+            await CrearMetaEstrategica();
+        }
+    }
+
+    /// <summary>
+    /// MÉTODO: Crea una nueva meta estratégica en la API
+    /// HTTP POST /api/metasestrategicas
+    /// </summary>
+
+    private async Task CrearMetaEstrategica()
+    {
+        LimpiarMensajes();
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+
+            /*
+            OBJETO JSON PARA LA CREACIÓN:
+            Enviamos solo los campos necesarios para crear la meta estratégica.
+            La API asignará automáticamente el Id.
+            Se incluye IdObjetivo para establecer la relación.
+            */
+
+            var metaParaCrear = new
+            {
+                IdObjetivo = metaEstrategicaActual.IdObjetivo, // Clave foránea
+                Titulo = metaEstrategicaActual.Titulo,
+                Descripcion = metaEstrategicaActual.Descripcion
+            };
+
+            var respuesta = await http.PostAsJsonAsync(urlBaseApiMetas, metaParaCrear);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                var metaCreada = await respuesta.Content.ReadFromJsonAsync<MetaEstrategica>();
+
+                // Actualizamos la lista localmente para reflejar el cambio sin recargar
+                if (metaCreada != null)
+                {
+                    mensaje = $"Meta estratégica creada con ID {metaCreada.Id}.";
+                    claseAviso = "alert alert-success";
+
+                    //Refrescamos la lista para incluir la nueva meta}
+                    await CargarMetasEstrategicas();
+                    LimpiarFormulario(); // Reseteamos el formulario
+                }
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"Error al crear la meta estratégica: {respuesta.StatusCode} - {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+
+        }
+
+        catch (Exception error)
+        {
+            mensaje = $"Error al crear la meta estratégica: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+
+    }
+
+    /// <summary>
+    /// MÉTODO: Actualiza una meta estratégica existente en la API
+    /// HTTP PUT /api/metasestrategicas/{id}
+    /// </summary>
+
+    private async Task ActualizarMetaEstrategica()
+    {
+        LimpiarMensajes();
+
+        if (metaEstrategicaActual.Id <= 0)
+        {
+            mensaje = "ID de meta estratégica inválido para actualización.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var url = $"{urlBaseApiMetas}/id/{metaEstrategicaActual.Id}";
+
+            /*
+            OBJETO JSON PARA LA ACTUALIZACIÓN:
+            Enviamos los campos que se pueden actualizar.
+            Incluimos IdObjetivo para mantener la relación.
+            */
+
+            var metaParaActualizar = new
+            {
+                IdObjetivo = metaEstrategicaActual.IdObjetivo, // Clave foránea
+                Titulo = metaEstrategicaActual.Titulo,
+                Descripcion = metaEstrategicaActual.Descripcion
+            };
+
+            var respuesta = await http.PutAsJsonAsync(url, metaParaActualizar);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = $"Meta estratégica con ID {metaEstrategicaActual.Id} actualizada.";
+                claseAviso = "alert alert-success";
+
+                //Refrescamos la lista para reflejar los cambios
+                await CargarMetasEstrategicas();
+                LimpiarFormulario(); // Reseteamos el formulario
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"Error al actualizar la meta estratégica: {respuesta.StatusCode} - {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al actualizar la meta estratégica: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+
+    }
+
+
+    /// <summary>
+    /// MÉTODO: Elimina un objetivo estratégico
+    /// IMPORTANTE: Considera las relaciones al eliminar
+    /// HTTP DELETE /api/metasestrategicas/id/{id}
+    /// </summary>
+    private async Task EliminarMetaEstrategica()
+    {
+        LimpiarMensajes();
+
+        if (metaEstrategicaActual.Id <= 0)
+        {
+            mensaje = "Debe buscar un ID de meta estrategica primero para poder eliminar.";
+            claseAviso = "alert alert-warning";
+            return;
+        }
+
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var url = $"{urlBaseApiMetas}/id/{metaEstrategicaActual.Id}";
+            var respuesta = await http.DeleteAsync(url);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Meta Estrategica Eliminada con éxito.";
+                claseAviso = "alert alert-success";
+                await CargarMetasEstrategicas();
+                LimpiarFormulario();
+            }
+            else
+            {
+                var detalle = await respuesta.Content.ReadAsStringAsync();
+                mensaje = $"No se pudo eliminar la meta estrategica: {detalle}";
+                claseAviso = "alert alert-danger";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error al eliminar: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+
+    // ==========================================
+    // EXPLICACIÓN: MÉTODOS AUXILIARES
+    // ==========================================
+
+    /// <summary>
+    /// MÉTODO: Prueba la conectividad con la API
+    /// PROPÓSITO: Diagnóstico de problemas de conexión
+    /// </summary>
+    private async Task ProbarConexion()
+    {
+        try
+        {
+            using var http = fabricaHttp.CreateClient("ApiProyecto");
+            var respuesta = await http.GetAsync(urlBaseApiMetas);
+
+            if (respuesta.IsSuccessStatusCode)
+            {
+                mensaje = "Conexión exitosa con la API.";
+                claseAviso = "alert alert-success";
+            }
+            else
+            {
+                mensaje = $"Error de conexión: {respuesta.StatusCode}";
+                claseAviso = "alert alert-warning";
+            }
+        }
+        catch (Exception error)
+        {
+            mensaje = $"Error de conexión: {error.Message}";
+            claseAviso = "alert alert-danger";
+        }
+    }
+
+    /// <summary>
+    /// MÉTODO: Carga datos de un objetivo en el formulario para edición
+    /// PATRÓN: Data Transfer - del display al formulario
+    /// </summary>
+    private void CargarEnFormulario(MetaEstrategica meta)
+    {
+        /*
+        IMPORTANTE: Creación de nueva instancia
+        Evitamos modificar directamente el objeto de la lista
+        para prevenir efectos secundarios no deseados
+        */
+        metaEstrategicaActual = new MetaEstrategica
+        {
+
+            Id = meta.Id,
+            IdObjetivo = meta.IdObjetivo, // CLAVE FORÁNEA
+            Titulo = meta.Titulo,
+            Descripcion = meta.Descripcion
+
+        };
+
+        // Actualizamos el estado del formulario
+        existeMetaEstrategica = true;
+        textoBotonGuardar = "Actualizar";
+        mensaje = "Meta estratégica cargado en el formulario.";
+        claseAviso = "alert alert-info";
+    }
+
+    /// <summary>
+    /// MÉTODO: Limpia mensajes de estado
+    /// PROPÓSITO: Mantener limpia la interfaz entre operaciones
+    /// </summary>
+    private void LimpiarMensajes()
+    {
+        mensaje = "";
+        claseAviso = "";
+    }
+
+    /// <summary>
+    /// MÉTODO: Reinicia el formulario a su estado inicial
+    /// IMPORTANTE: Resetea también el estado de clave foránea
+    /// </summary>
+    private void LimpiarFormulario()
+    {
+        /*
+        RESET COMPLETO:
+        Creamos una nueva instancia para asegurar que todos los valores
+        vuelvan a sus valores por defecto, incluyendo IdVariable = 0
+        */
+        metaEstrategicaActual = new MetaEstrategica();
+        existeMetaEstrategica = false;
+        textoBotonGuardar = "Crear";
+        LimpiarMensajes();
+    }
+}
+
+
+
+

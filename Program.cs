@@ -3,6 +3,7 @@
 // Aquí se configuran los servicios y se define cómo se ejecuta la aplicación.
 
 using FrontendBlazorApi.Components;          // Importa el espacio de nombres donde está App.razor
+using FrontendBlazorApi.Services;            // Servicios personalizados de la aplicación
 using Microsoft.AspNetCore.Components;       // Librerías base de Blazor
 using Microsoft.AspNetCore.Components.Web;   // Funcionalidades adicionales de renderizado
 
@@ -18,14 +19,17 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 
- // Servicio HttpClient para consumir la API externa de productos.
-    // Se configura con la URL base de la API.  
- builder.Services.AddHttpClient("ApiProyecto", cliente =>
- {
-     // URL base de la API que expone /api/producto
-     cliente.BaseAddress = new Uri("http://localhost:5031/");
-     // Aquí se pueden agregar encabezados por defecto si se requiere.
- });
+// Servicio HttpClient para consumir la API externa de productos.
+// Se configura con la URL base de la API.  
+builder.Services.AddHttpClient("ApiProyecto", cliente =>
+{
+    // URL base de la API que expone /api/producto
+    cliente.BaseAddress = new Uri("http://localhost:5031/");
+    // Aquí se pueden agregar encabezados por defecto si se requiere.
+});
+
+// Registro del servicio de autenticación personalizado
+builder.Services.AddScoped<AuthService>();
 
 
 /*

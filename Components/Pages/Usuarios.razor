@@ -16,7 +16,7 @@
 
 <PageTitle>Usuarios</PageTitle>
 
-<div class="container items-center">
+<div class="container-fluid px-3 px-lg-5">
     <div class="welcome-card">
         <h5 class="display-4 text-primary mb-4">
             <i class="bi bi-people-fill me-3"></i>
@@ -72,6 +72,12 @@
                     <label class="form-label">Contraseña</label>
                     <InputText type="password" class="form-control" @bind-Value="usuarioActual.Contrasena" />
                 </div>
+                
+                @* Campo Tipo de Usuario*@
+                <div class="col-md-3">
+                    <label class="form-label">Tipo de Usuario</label>
+                    <InputText class="form-control" @bind-Value="usuarioActual.TipoUsuario" />
+                </div>
 
                 @* Campo Ruta Avatar *@
                 <div class="col-md-3">
@@ -121,6 +127,7 @@
                     <tr>
                         <th>ID</th>
                         <th>Email</th>
+                        <th>T. Usuario</th>
                         <th>Ruta Avatar</th>
                         <th>Estado</th>
                         <th>Acciones</th>
@@ -132,6 +139,7 @@
                         <tr>
                             <td>@usuario.Id</td>
                             <td>@usuario.Email</td>
+                            <td>@usuario.TipoUsuario</td>
                             <td>@usuario.RutaAvatar</td>
                             <td>@(usuario.Activo ? "Activo" : "Inactivo")</td>
                             <td>
@@ -176,6 +184,7 @@
     protected override async Task OnInitializedAsync()
     {
         await CargarUsuarios();
+        LimpiarMensajes();
     }
 
     // ==========================================
@@ -246,6 +255,7 @@
                     Id = encontrado.Id,
                     Email = encontrado.Email,
                     Contrasena = encontrado.Contrasena,
+                    TipoUsuario = encontrado.TipoUsuario,
                     RutaAvatar = encontrado.RutaAvatar,
                     Activo = encontrado.Activo
                 };
@@ -301,6 +311,7 @@
             {
                 Email = usuarioActual.Email,
                 Contrasena = usuarioActual.Contrasena,
+                TipoUsuario = usuarioActual.TipoUsuario,
                 RutaAvatar = usuarioActual.RutaAvatar,
                 Activo = usuarioActual.Activo
             };
@@ -365,6 +376,7 @@
             {
                 Email = usuarioActual.Email,
                 Contrasena = usuarioActual.Contrasena,
+                TipoUsuario = usuarioActual.TipoUsuario,
                 RutaAvatar = usuarioActual.RutaAvatar,
                 Activo = usuarioActual.Activo
             };
@@ -478,6 +490,7 @@
             Id = u.Id,
             Email = u.Email,
             Contrasena = u.Contrasena,
+            TipoUsuario = u.TipoUsuario,
             RutaAvatar = u.RutaAvatar,
             Activo = u.Activo
         };
@@ -509,37 +522,5 @@
     }
 }
 
-<style>
-.table-blue {
-  background: #f8fbff;
-}
 
-.table-blue th {
-  background: linear-gradient(90deg, #007bff, #00bfff);
-  color: #fff;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  border-bottom: 2px solid #1260a8;
-}
-
-.table-blue tbody tr {
-  background-color: #fff;
-}
-
-.table-blue tbody tr:nth-child(even) {
-  background-color: #e8f1fb;
-}
-
-.table-blue tbody tr:hover {
-  background-color: #d3e4fa;
-}
-
-.table-blue td, .table-blue th {
-  border-color: #d0e3fa !important;
-}
-
-.table-blue td {
-  color: #19507e;
-}
-</style>
 

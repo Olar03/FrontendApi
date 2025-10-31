@@ -81,5 +81,28 @@ h1:focus {
 }
 
 .table-blue td {
-  color: #19507e;
+  color: #2388b0;
 }
+
+/* Estilos de containers */
+
+/* Contenedor personalizado más ancho */
+.container-wide {
+  width: 95%;
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Responsivo */
+@media (max-width: 767px) {
+  .container-wide {
+    width: 98%;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* Estilos de navegación */
