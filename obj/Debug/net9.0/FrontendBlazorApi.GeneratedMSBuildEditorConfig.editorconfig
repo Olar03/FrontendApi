@@ -76,12 +76,12 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xQcmVzdXB1ZXN0b3MucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/2025/PROYECTOS_FRONT/FrontendBlazorApi/Components/Pages/Productos.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xQcm9kdWN0b3MucmF6b3I=
+[C:/2025/PROYECTOS_FRONT/FrontendBlazorApi/Components/Pages/ProductoEntregables.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xQcm9kdWN0b0VudHJlZ2FibGVzLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/2025/PROYECTOS_FRONT/FrontendBlazorApi/Components/Pages/ProductosEntregables.razor]
-build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xQcm9kdWN0b3NFbnRyZWdhYmxlcy5yYXpvcg==
+[C:/2025/PROYECTOS_FRONT/FrontendBlazorApi/Components/Pages/Productos.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xQcm9kdWN0b3MucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/2025/PROYECTOS_FRONT/FrontendBlazorApi/Components/Pages/Proyectos.razor]
