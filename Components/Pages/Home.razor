@@ -2,7 +2,7 @@
 
 @using System.Net.Http.Json
 @using FrontendBlazorApi.Models
-@using FrontendBlazorApi.Services
+@using FrontendBlazorApi.Servicios
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
 @using System.Linq
@@ -11,10 +11,6 @@
 @inject AuthService authService
 @inject NavigationManager navegacion
 @rendermode InteractiveServer
-
-@inject FrontendBlazorApi.Services.AuthService AuthService
-@inject NavigationManager NavigationManager
-@implements IDisposable
 
 <PageTitle>Dashboard - Sistema de Gestión</PageTitle>
 
@@ -28,15 +24,15 @@
 
     protected override async Task OnInitializedAsync() // Verificar estado de autenticación al inicializar
     {
-        usuarioLogueado = await AuthService.EstáAutenticado();
+        usuarioLogueado = await authService.EstáAutenticado();
 
         if (usuarioLogueado) // Si el usuario está autenticado
         {
-            nombreUsuario = await AuthService.ObtenerUsuarioActual();
-            tipoUsuario = await AuthService.ObtenerTipoUsuario();
-            esAdmin = await AuthService.EsAdministrador();
-            esTecnico = await AuthService.EsTecnico();
-            esUsuarioRegular = await AuthService.EsUsuarioRegular();
+            nombreUsuario = await authService.ObtenerUsuarioActual();
+            tipoUsuario = await authService.ObtenerTipoUsuario();
+            esAdmin = await authService.EsAdministrador();
+            esTecnico = await authService.EsTecnico();
+            esUsuarioRegular = await authService.EsUsuarioRegular();
         }
 
         StateHasChanged(); // Forzar la actualización de la interfaz
@@ -44,12 +40,12 @@
 
     private void IrALogin() // Navegar a la página de login
     {
-        NavigationManager.NavigateTo("/login");
+        navegacion.NavigateTo("/login");
     }
 
     private void NavegarA(string ruta) // Navegar a una ruta específica
     {
-        NavigationManager.NavigateTo(ruta);
+        navegacion.NavigateTo(ruta);
     }
 
     public void Dispose() // Implementación de IDisposable

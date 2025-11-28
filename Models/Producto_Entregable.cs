@@ -6,6 +6,8 @@ namespace FrontendBlazorApi.Models
 {
     public class Producto_Entregable
     {
+
+
         [Required]
         [JsonPropertyName("IdProducto")]
         public int IdProducto { get; set; }

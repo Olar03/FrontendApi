@@ -149,7 +149,8 @@ TODO: Agregar la funcionalidad de asociar productos a proyectos.
                 <button type="button" class="btn btn-secondary" @onclick="BuscarPorID">
                     <i class="bi bi-search" aria-hidden="true"></i> Buscar
                 </button>
-                <button type="button" class="btn btn-warning" @onclick="ActualizarProyecto" disabled="@(!existeProyecto)">
+                <button type="button" class="btn btn-warning" @onclick="ActualizarProyecto"
+                    disabled="@(!existeProyecto)">
                     <i class="bi bi-pencil-square" aria-hidden="true"></i> Actualizar
                 </button>
                 <button type="button" class="btn btn-danger" @onclick="EliminarProyecto" disabled="@(!existeProyecto)">
@@ -193,14 +194,14 @@ TODO: Agregar la funcionalidad de asociar productos a proyectos.
                             <td>
                                 @{
                                     var responsableRelacionado = listaResponsables
-                                        .FirstOrDefault(r => r.Id == proyecto.IdResponsable);
+                                    .FirstOrDefault(r => r.Id == proyecto.IdResponsable);
                                 }
                                 @(responsableRelacionado?.Nombre ?? $"Responsable ID: {proyecto.IdResponsable}")
                             </td>
                             <td>
                                 @{
                                     var tipoRelacionado = listaTiposProyecto
-                                        .FirstOrDefault(t => t.Id == proyecto.IdTipoProyecto);
+                                    .FirstOrDefault(t => t.Id == proyecto.IdTipoProyecto);
                                 }
                                 @(tipoRelacionado?.Nombre ?? $"Tipo ID: {proyecto.IdTipoProyecto}")
                             </td>
@@ -270,16 +271,37 @@ TODO: Agregar la funcionalidad de asociar productos a proyectos.
         {
             cargando = true;
             using var httpClient = fabricaHttp.CreateClient("ApiProyecto");
-            var respuesta = await httpClient.GetFromJsonAsync<RespuestaApi<List<Proyecto>>>(urlBaseApiProyectos);
 
-            listaProyectos = respuesta?.Datos ?? new List<Proyecto>();
-            mensaje = $"Se cargaron {listaProyectos.Count} proyectos.";
-            claseAviso = "alert alert-success";
+            var httpRespuesta = await httpClient.GetAsync(urlBaseApiProyectos);
+
+            // Si la respuesta es 204 (No Content), la tabla está vacía
+            if (httpRespuesta.StatusCode == System.Net.HttpStatusCode.NoContent)
+            {
+                listaProyectos = new List<Proyecto>();
+                mensaje = "No hay proyectos registrados en la base de datos.";
+                claseAviso = "alert alert-info";
+                return;
+            }
+
+            if (httpRespuesta.IsSuccessStatusCode)
+            {
+                var respuesta = await httpRespuesta.Content.ReadFromJsonAsync<RespuestaApi<List<Proyecto>>>();
+                listaProyectos = respuesta?.Datos ?? new List<Proyecto>();
+                mensaje = $"Se cargaron {listaProyectos.Count} proyectos.";
+                claseAviso = "alert alert-success";
+            }
+            else
+            {
+                mensaje = $"Error al cargar proyectos: {httpRespuesta.StatusCode}";
+                claseAviso = "alert alert-warning";
+                listaProyectos = new List<Proyecto>();
+            }
         }
         catch (Exception error)
         {
             mensaje = $"Error al cargar proyectos: {error.Message}";
             claseAviso = "alert alert-danger";
+            listaProyectos = new List<Proyecto>();
         }
         finally
         {
@@ -292,13 +314,29 @@ TODO: Agregar la funcionalidad de asociar productos a proyectos.
         try
         {
             using var httpClient = fabricaHttp.CreateClient("ApiProyecto");
-            var respuesta = await httpClient.GetFromJsonAsync<RespuestaApi<List<Responsable>>>(urlBaseApiResponsables);
-            listaResponsables = respuesta?.Datos ?? new List<Responsable>();
+            var httpRespuesta = await httpClient.GetAsync(urlBaseApiResponsables);
+
+            if (httpRespuesta.StatusCode == System.Net.HttpStatusCode.NoContent)
+            {
+                listaResponsables = new List<Responsable>();
+                return;
+            }
+
+            if (httpRespuesta.IsSuccessStatusCode)
+            {
+                var respuesta = await httpRespuesta.Content.ReadFromJsonAsync<RespuestaApi<List<Responsable>>>();
+                listaResponsables = respuesta?.Datos ?? new List<Responsable>();
+            }
+            else
+            {
+                listaResponsables = new List<Responsable>();
+            }
         }
         catch (Exception error)
         {
             mensaje = $"Error al cargar responsables: {error.Message}";
             claseAviso = "alert alert-danger";
+            listaResponsables = new List<Responsable>();
         }
     }
 
@@ -307,13 +345,29 @@ TODO: Agregar la funcionalidad de asociar productos a proyectos.
         try
         {
             using var httpClient = fabricaHttp.CreateClient("ApiProyecto");
-            var respuesta = await httpClient.GetFromJsonAsync<RespuestaApi<List<TipoProyecto>>>(urlBaseApiTiposProyecto);
-            listaTiposProyecto = respuesta?.Datos ?? new List<TipoProyecto>();
+            var httpRespuesta = await httpClient.GetAsync(urlBaseApiTiposProyecto);
+
+            if (httpRespuesta.StatusCode == System.Net.HttpStatusCode.NoContent)
+            {
+                listaTiposProyecto = new List<TipoProyecto>();
+                return;
+            }
+
+            if (httpRespuesta.IsSuccessStatusCode)
+            {
+                var respuesta = await httpRespuesta.Content.ReadFromJsonAsync<RespuestaApi<List<TipoProyecto>>>();
+                listaTiposProyecto = respuesta?.Datos ?? new List<TipoProyecto>();
+            }
+            else
+            {
+                listaTiposProyecto = new List<TipoProyecto>();
+            }
         }
         catch (Exception error)
         {
             mensaje = $"Error al cargar tipos de proyecto: {error.Message}";
             claseAviso = "alert alert-danger";
+            listaTiposProyecto = new List<TipoProyecto>();
         }
     }
 
@@ -457,22 +511,24 @@ TODO: Agregar la funcionalidad de asociar productos a proyectos.
         {
             using var httpClient = fabricaHttp.CreateClient("ApiProyecto");
 
-            var proyectoParaActualizar = new
+            var proyectoParaActualizar = new Dictionary<string, object?>
             {
-                IdProyectoPadre = proyectoActual.IdProyectoPadre,
-                IdResponsable = proyectoActual.IdResponsable,
-                IdTipoProyecto = proyectoActual.IdTipoProyecto,
-                Codigo = proyectoActual.Codigo,
-                Titulo = proyectoActual.Titulo,
-                Descripcion = proyectoActual.Descripcion,
-                FechaInicio = proyectoActual.FechaInicio,
-                FechaFinPrevista = proyectoActual.FechaFinPrevista,
-                FechaModificacion = proyectoActual.FechaModificacion,
-                FechaFinalizacion = proyectoActual.FechaFinalizacion,
-                RutaLogo = proyectoActual.RutaLogo
+                ["IdProyectoPadre"] = proyectoActual.IdProyectoPadre,
+                ["IdResponsable"] = proyectoActual.IdResponsable,
+                ["IdTipoProyecto"] = proyectoActual.IdTipoProyecto,
+                ["Codigo"] = proyectoActual.Codigo ?? "",
+                ["Titulo"] = proyectoActual.Titulo ?? "",
+                ["Descripcion"] = proyectoActual.Descripcion,
+                ["FechaInicio"] = proyectoActual.FechaInicio,
+                ["FechaFinPrevista"] = proyectoActual.FechaFinPrevista,
+                ["FechaModificacion"] = proyectoActual.FechaModificacion,
+                ["FechaFinalizacion"] = proyectoActual.FechaFinalizacion,
+                ["RutaLogo"] = proyectoActual.RutaLogo
             };
 
-            var respuesta = await httpClient.PutAsJsonAsync($"{urlBaseApiProyectos}/{proyectoActual.Id}", proyectoParaActualizar);
+            // La API requiere: PUT /api/{tabla}/{nombreClave}/{valorClave}
+            var url = $"{urlBaseApiProyectos}/id/{proyectoActual.Id}";
+            var respuesta = await httpClient.PutAsJsonAsync(url, proyectoParaActualizar);
 
             if (respuesta.IsSuccessStatusCode)
             {
@@ -569,4 +625,3 @@ TODO: Agregar la funcionalidad de asociar productos a proyectos.
         LimpiarMensajes();
     }
 }
-

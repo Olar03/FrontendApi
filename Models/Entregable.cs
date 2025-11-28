@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace FrontendBlazorApi.Models
@@ -8,17 +10,22 @@ namespace FrontendBlazorApi.Models
     /// </summary>
     public class Entregable
     {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [JsonPropertyName("Id")]
         public int? Id { get; set; }
 
+        [MaxLength(50)]
         [JsonPropertyName("Codigo")]
-        public string? Codigo { get; set; } = string.Empty;
+        public string? Codigo { get; set; }
 
+        [Required]
+        [MaxLength(255)]
         [JsonPropertyName("Titulo")]
         public string Titulo { get; set; } = string.Empty;
 
         [JsonPropertyName("Descripcion")]
-        public string? Descripcion { get; set; } = string.Empty;
+        public string? Descripcion { get; set; }
 
         [JsonPropertyName("FechaInicio")]
         public DateTime? FechaInicio { get; set; }
@@ -31,5 +38,11 @@ namespace FrontendBlazorApi.Models
 
         [JsonPropertyName("FechaFinalizacion")]
         public DateTime? FechaFinalizacion { get; set; }
+
+        // Navegación
+        public ICollection<Producto_Entregable>? ProductoEntregables { get; set; }
+        public ICollection<Responsable_Entregable>? ResponsableEntregables { get; set; }
+        public ICollection<Archivo_Entregable>? ArchivoEntregables { get; set; }
+        public ICollection<Actividad>? Actividades { get; set; }
     }
 }

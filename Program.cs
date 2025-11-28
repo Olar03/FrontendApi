@@ -3,7 +3,7 @@
 // Aquí se configuran los servicios y se define cómo se ejecuta la aplicación.
 
 using FrontendBlazorApi.Components;          // Importa el espacio de nombres donde está App.razor
-using FrontendBlazorApi.Services;            // Servicios personalizados de la aplicación
+using FrontendBlazorApi.Servicios;           // Servicios genéricos (ServicioAutenticacion, ServicioApiGenerico)
 using Microsoft.AspNetCore.Components;       // Librerías base de Blazor
 using Microsoft.AspNetCore.Components.Web;   // Funcionalidades adicionales de renderizado
 
@@ -19,17 +19,20 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 
-// Servicio HttpClient para consumir la API externa de productos.
+// Servicio HttpClient para consumir la API externa.
 // Se configura con la URL base de la API.  
+
+// HttpClient adicional para compatibilidad con código existente
 builder.Services.AddHttpClient("ApiProyecto", cliente =>
 {
-    // URL base de la API que expone /api/producto
     cliente.BaseAddress = new Uri("http://localhost:5031/");
-    // Aquí se pueden agregar encabezados por defecto si se requiere.
+    //cliente.BaseAddress = new Uri("http://proyectocsharp.runasp.net/");
 });
 
-// Registro del servicio de autenticación personalizado
+// Registro de servicios personalizados
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ServicioAutenticacion>();
+builder.Services.AddScoped<ServicioApiGenerico>();
 
 
 /*
